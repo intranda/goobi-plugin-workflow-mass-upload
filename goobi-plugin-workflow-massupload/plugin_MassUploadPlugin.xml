@@ -1,0 +1,19 @@
+<config_plugin>
+	
+	<!-- which file types shall be allowed for uploading these -->
+	<allowed-file-extensions>/(\\.|\\/)(gif|jpe?g|png|tiff?|jp2|pdf)$/</allowed-file-extensions>
+	
+	<!-- which workflow step has to be open to allow the upload into the process -->
+	<allowed-step>Scanning</allowed-step>
+	<allowed-step>Upload</allowed-step>
+	
+	<!-- which part of the files shall be used to find the right process (prefix, suffix or complete) -->
+	<filename-part>prefix</filename-part>
+	<filename-separator>_</filename-separator>
+	
+	<!-- which part of the process title shall be used to match the right process (prefix, suffix or complete) - STILL UNUSED
+	<processname-part>complete</processname-part>
+	<processname_separator>_</processname_separator>
+	 -->
+	
+</config_plugin>
