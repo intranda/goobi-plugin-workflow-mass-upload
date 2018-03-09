@@ -67,12 +67,12 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     @SuppressWarnings("unchecked")
 	public MassUploadPlugin() {
     	log.info("Mass upload plugin started");
-    	allowedTypes = ConfigPlugins.getPluginConfig(this).getString("allowed-file-extensions", "/(\\.|\\/)(gif|jpe?g|png|tiff?|jp2|pdf)$/");
-    	filenamePart = ConfigPlugins.getPluginConfig(this).getString("filename-part", "prefix").toLowerCase();
-    	filenameSeparator = ConfigPlugins.getPluginConfig(this).getString("filename-separator", "_").toLowerCase();
+    	allowedTypes = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("allowed-file-extensions", "/(\\.|\\/)(gif|jpe?g|png|tiff?|jp2|pdf)$/");
+    	filenamePart = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("filename-part", "prefix").toLowerCase();
+    	filenameSeparator = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("filename-separator", "_").toLowerCase();
 //    	processnamePart = ConfigPlugins.getPluginConfig(this).getString("processname-part", "complete").toLowerCase();
 //    	processnameSeparator = ConfigPlugins.getPluginConfig(this).getString("processname-separator", "_").toLowerCase();
-    	stepTitles = ConfigPlugins.getPluginConfig(this).getList("allowed-step");
+    	stepTitles = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getList("allowed-step");
     	LoginBean login = (LoginBean) Helper.getManagedBeanValue("#{LoginForm}");
 		if (login != null){
 	    	user = login.getMyBenutzer();
