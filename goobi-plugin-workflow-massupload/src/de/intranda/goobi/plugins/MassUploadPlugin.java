@@ -243,10 +243,10 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private void assignProcess(MassUploadedFile uploadedFile){
     	// get the relevant part of the file name
 		String matchFile = uploadedFile.getFilename().substring(0, uploadedFile.getFilename().lastIndexOf("."));
-		if (filenamePart.equals("prefix")){
+		if (filenamePart.equals("prefix") && matchFile.contains(filenameSeparator)){
 			matchFile = matchFile.substring(0, matchFile.lastIndexOf(filenameSeparator));
 		}
-		if (filenamePart.equals("suffix")){
+		if (filenamePart.equals("suffix") && matchFile.contains(filenameSeparator)){
 			matchFile = matchFile.substring(matchFile.lastIndexOf(filenameSeparator) + 1, matchFile.length());
 		}
 		
