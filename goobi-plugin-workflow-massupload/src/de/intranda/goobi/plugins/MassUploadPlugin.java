@@ -202,6 +202,8 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
 	            	Helper.setFehlerMeldung("Error while copying file during mass upload", e);
 				}
                 muf.getFile().delete();
+    		} else {
+    			Helper.setFehlerMeldung("File could not be matched and gets skipped: " + muf.getFilename());
     		}
 		}
     	
