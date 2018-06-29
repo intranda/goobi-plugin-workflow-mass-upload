@@ -126,7 +126,7 @@
 												<f:facet name="header">
 													<h:outputText value="#{msgs.prozess}" />
 												</f:facet>
-												<h:outputText value="#{item.processTitle}" title="#{item.processFolder}" />
+												<h:outputText value="#{item.processTitle == null or item.processTitle eq ''?'-':item.processTitle}" title="#{item.processFolder}" />
 											</h:column>
 											
 											<h:column>
