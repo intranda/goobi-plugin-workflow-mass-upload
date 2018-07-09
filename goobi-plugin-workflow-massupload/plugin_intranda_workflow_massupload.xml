@@ -2,6 +2,9 @@
 	
 	<!-- which file types shall be allowed for uploading these -->
 	<allowed-file-extensions>/(\\.|\\/)(gif|jpe?g|png|tiff?|jp2|pdf)$/</allowed-file-extensions>
+    
+    <!-- name of the folder inside of a users home directory to use as alteranive for web upload -->
+    <user-folder-name>mass_upload</user-folder-name>
 	
 	<!-- which workflow step has to be open to allow the upload into the process -->
 	<allowed-step>Scanning</allowed-step>

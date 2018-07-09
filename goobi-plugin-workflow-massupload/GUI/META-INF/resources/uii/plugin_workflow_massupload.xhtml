@@ -69,17 +69,25 @@
 							<div class="row" style="padding:15px;">
 							
 							<!-- Upload area -->
-							<div class="col-sm-6 draganddroparea" >
-								<h:form id="uploadform" prependId="false"  >
+							<div class="col-sm-6" >
+								<div class="draganddroparea" >
+									<h:form id="uploadform" prependId="false"  >
 									 	<p:fileUpload fileUploadListener="#{NavigationForm.workflowPlugin.uploadFile}" id="upload" auto="true"
 											style="text-align:center;" mode="advanced" multiple="true" dragDropSupport="true"
 											label="#{msgs.plugin_massupload_selectFiles}" sizeLimit="1000000000000"
 											allowTypes="#{NavigationForm.workflowPlugin.allowedTypes}" 
 											oncomplete="if(this.files.length == 0) sortFiles()" 
 											update=":actionform"/>
+									</h:form>
+								</div>
+								<h:form>
+									<h:commandLink title="#{msgs.plugin_massupload_use_home_directory}" 
+										action="#{NavigationForm.workflowPlugin.readFilesFromUserHomeFolder}"
+										styleClass="pull-right font-light margin-top-regular">
+										<h:outputText value="#{msgs.plugin_massupload_use_home_directory}" />
+									</h:commandLink>
 								</h:form>
 							</div>
-
 							<div class="col-sm-6">
 								<h:form id="actionarea">
 									<p:remoteCommand name="sortFiles" actionListener="#{NavigationForm.workflowPlugin.sortFiles}" update="actionarea, :actionform"/>

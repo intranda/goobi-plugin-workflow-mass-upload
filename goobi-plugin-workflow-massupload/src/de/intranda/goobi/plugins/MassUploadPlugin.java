@@ -31,6 +31,7 @@ import de.intranda.goobi.plugins.massuploadutils.MassUploadedFileStatus;
 import de.intranda.goobi.plugins.massuploadutils.MassUploadedProcess;
 import de.sub.goobi.config.ConfigPlugins;
 import de.sub.goobi.config.ConfigurationHelper;
+import de.sub.goobi.helper.FilesystemHelper;
 import de.sub.goobi.helper.Helper;
 import de.sub.goobi.helper.HelperSchritte;
 import de.sub.goobi.helper.NIOFileUtils;
@@ -51,6 +52,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private static final String PLUGIN_NAME = "intranda_workflow_massupload";
     private String allowedTypes;
     private String filenamePart;
+    private String userFolderName;
     private String filenameSeparator;
 //    private String processnamePart;
 //    private String processnameSeparator;
@@ -69,6 +71,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     	log.info("Mass upload plugin started");
     	allowedTypes = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("allowed-file-extensions", "/(\\.|\\/)(gif|jpe?g|png|tiff?|jp2|pdf)$/");
     	filenamePart = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("filename-part", "prefix").toLowerCase();
+    	userFolderName = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("user-folder-name", "mass_upload").toLowerCase();
     	filenameSeparator = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("filename-separator", "_").toLowerCase();
 //    	processnamePart = ConfigPlugins.getPluginConfig(this).getString("processname-part", "complete").toLowerCase();
 //    	processnameSeparator = ConfigPlugins.getPluginConfig(this).getString("processname-separator", "_").toLowerCase();
@@ -171,6 +174,32 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         }
     }
 
+    /**
+     * do not upload the images from web UI, use images of subfolder in user home directory instead,
+     * usually called 'mass_upload'
+     */
+    public void readFilesFromUserHomeFolder() {
+        uploadedFiles = new ArrayList<>();
+        finishedInserts = new ArrayList<MassUploadedProcess>();
+        stepIDs = new HashSet<>();
+        try {
+            File folder = new File(user.getHomeDir(), userFolderName);
+            if (folder.exists() && folder.canRead()) {
+                List<Path> files = NIOFileUtils.listFiles(folder.getAbsolutePath());
+                for (Path file : files) {
+                    MassUploadedFile muf = new MassUploadedFile(file.toFile(), file.getFileName().toString());
+                    assignProcess(muf);
+                    uploadedFiles.add(muf);
+                }
+            } else {
+                Helper.setFehlerMeldung("Folder " + folder.getAbsolutePath() + " does not exist or is not readable.");
+            }
+        } catch (Exception e) {
+            log.error("Error while reading files from users home directory for mass upload", e);
+            Helper.setFehlerMeldung("Error while reading files from users home directory for mass upload", e);
+        }
+        
+    }
     
     /**
      * Cancel the entire process and delete the uploaded files
