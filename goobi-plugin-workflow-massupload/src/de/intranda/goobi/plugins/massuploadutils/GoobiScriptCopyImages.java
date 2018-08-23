@@ -50,6 +50,7 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
         int count = 0;
         for (MassUploadedFile muf : uploadedFiles) {
             if (muf.getStatus() == MassUploadedFileStatus.OK) {
+                muf.setTransfered(false);
                 GoobiScriptResult gsr = new GoobiScriptResult(starttime + count++, command, username);
                 gsr.setProcessTitle(muf.getProcessTitle());
                 resultList.add(gsr);
@@ -96,6 +97,7 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
                             Helper.setFehlerMeldung("Error while copying file during mass upload goobiscript", e);
                         }
                         muf.getFile().delete();
+                        muf.setTransfered(true);
                     } else {
                         Helper.setFehlerMeldung("File could not be matched and gets skipped: " + muf.getFilename());
                     }
@@ -118,7 +120,7 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
 			          }
 			          gsr.updateTimestamp();
                       
-			          if (gsr.getResultType()==GoobiScriptResultType.OK) {
+			          if (gsr.getResultType()==GoobiScriptResultType.OK && isLastFileOfProcess(muf)) {
     			          Helper.addMessageToProcessLog(so.getProcessId(), LogType.DEBUG, "Image uploaded and step " + so.getTitel() + " finished using Massupload Plugin via Goobiscript.");
     			          HelperSchritte hs = new HelperSchritte();
     			          so.setBearbeitungsbenutzer(user);
@@ -128,6 +130,21 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
                }
 			}
 		}
+
+        /**
+         * Check if there are other MassUploadedFiles in the list which are still not processed
+         * 
+         * @param muf
+         * @return
+         */
+        private boolean isLastFileOfProcess(MassUploadedFile muf) {
+            for (MassUploadedFile m : uploadedFiles) {
+                if (m.getProcessTitle() != null && m.getProcessTitle().equals(muf.getProcessTitle()) && m.isTransfered()==false) {
+                    return false;
+                }
+            }
+            return true;
+        }
 	}
 
 }
