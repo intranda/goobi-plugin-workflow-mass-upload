@@ -15,6 +15,7 @@ public class MassUploadedFile implements Comparable<MassUploadedFile> {
 	private String processTitle;
 	private String processFolder;
 	private int stepId;
+	private int tempId;
 	
 	public MassUploadedFile(File file, String filename){
 		this.file = file;

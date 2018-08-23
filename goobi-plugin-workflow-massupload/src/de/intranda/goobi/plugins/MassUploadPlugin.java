@@ -26,6 +26,7 @@ import org.goobi.production.plugin.interfaces.IWorkflowPlugin;
 import org.primefaces.event.FileUploadEvent;
 import org.primefaces.model.UploadedFile;
 
+import de.intranda.goobi.plugins.massuploadutils.GoobiScriptCopyImages;
 import de.intranda.goobi.plugins.massuploadutils.MassUploadedFile;
 import de.intranda.goobi.plugins.massuploadutils.MassUploadedFileStatus;
 import de.intranda.goobi.plugins.massuploadutils.MassUploadedProcess;
@@ -62,6 +63,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private File tempFolder;
     private HashSet<Integer> stepIDs = new HashSet<>();
     private List<MassUploadedProcess> finishedInserts = new ArrayList<MassUploadedProcess>();
+    private boolean copyImagesViaGoobiScript = false;
     
     /**
      * Constructor
@@ -76,6 +78,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
 //    	processnamePart = ConfigPlugins.getPluginConfig(this).getString("processname-part", "complete").toLowerCase();
 //    	processnameSeparator = ConfigPlugins.getPluginConfig(this).getString("processname-separator", "_").toLowerCase();
     	stepTitles = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getList("allowed-step");
+    	copyImagesViaGoobiScript = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getBoolean("copy-images-using-goobiscript", false);
     	LoginBean login = (LoginBean) Helper.getManagedBeanValue("#{LoginForm}");
 		if (login != null){
 	    	user = login.getMyBenutzer();
@@ -187,9 +190,11 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             if (folder.exists() && folder.canRead()) {
                 List<Path> files = NIOFileUtils.listFiles(folder.getAbsolutePath());
                 for (Path file : files) {
-                    MassUploadedFile muf = new MassUploadedFile(file.toFile(), file.getFileName().toString());
-                    assignProcess(muf);
-                    uploadedFiles.add(muf);
+                    if (!file.getFileName().toString().equals(".DS_Store")) {
+                        MassUploadedFile muf = new MassUploadedFile(file.toFile(), file.getFileName().toString());
+                        assignProcess(muf);
+                        uploadedFiles.add(muf);
+                    }
                 }
             } else {
                 Helper.setFehlerMeldung("Folder " + folder.getAbsolutePath() + " does not exist or is not readable.");
@@ -218,51 +223,61 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
      * All uploaded files shall now be moved to the correct processes
      */
     public void startInserting(){
-    	for (MassUploadedFile muf : uploadedFiles) {
-    		if (muf.getStatus()==MassUploadedFileStatus.OK){
-    			Path src = Paths.get(muf.getFile().getAbsolutePath());
-	            Path target = Paths.get(muf.getProcessFolder(), muf.getFilename());
-                try {
-					NIOFileUtils.copyFile(src, target);
-				} catch (IOException e) {
-					muf.setStatus(MassUploadedFileStatus.ERROR);
-	            	muf.setStatusmessage("File could not be copied to: " + target.toString());
-	            	log.error("Error while copying file during mass upload", e);
-	            	Helper.setFehlerMeldung("Error while copying file during mass upload", e);
-				}
-                muf.getFile().delete();
-    		} else {
-    			Helper.setFehlerMeldung("File could not be matched and gets skipped: " + muf.getFilename());
+        
+        if (copyImagesViaGoobiScript) {
+            GoobiScriptCopyImages gsci = new GoobiScriptCopyImages();
+            gsci.setUploadedFiles(uploadedFiles);
+            gsci.setUser(user);
+            gsci.execute();
+            Helper.setMeldung("plugin_massupload_insertionStartedViaGoobiScript");
+
+        } else {
+          	for (MassUploadedFile muf : uploadedFiles) {
+        		if (muf.getStatus()==MassUploadedFileStatus.OK){
+        			Path src = Paths.get(muf.getFile().getAbsolutePath());
+    	            Path target = Paths.get(muf.getProcessFolder(), muf.getFilename());
+                    try {
+    					NIOFileUtils.copyFile(src, target);
+    				} catch (IOException e) {
+    					muf.setStatus(MassUploadedFileStatus.ERROR);
+    	            	muf.setStatusmessage("File could not be copied to: " + target.toString());
+    	            	log.error("Error while copying file during mass upload", e);
+    	            	Helper.setFehlerMeldung("Error while copying file during mass upload", e);
+    				}
+                    muf.getFile().delete();
+        		} else {
+        			Helper.setFehlerMeldung("File could not be matched and gets skipped: " + muf.getFilename());
+        		}
     		}
-		}
-    	
-    	// all images are uploaded, so we close the workflow step now
-    	// first remove all stepIds which had errors
-    	for (MassUploadedFile muf : uploadedFiles) {
-    		if (muf.getStatus()!=MassUploadedFileStatus.OK){
-    			stepIDs.remove(muf.getStepId());
-    		}
-    	}
-    	
-    	// all others can be finished now
-    	for (Integer id : stepIDs) {
-		  	Step so = StepManager.getStepById(id);
-			if (so.getValidationPlugin() != null && so.getValidationPlugin().length() >0) {
-				IValidatorPlugin ivp = (IValidatorPlugin) PluginLoader.getPluginByTitle(PluginType.Validation, so.getValidationPlugin());
-				ivp.setStep(so);
-				if (!ivp.validate()) {
-					log.error("Error while closing the step " + so.getTitel() + " for process " + so.getProzess().getTitel());
-	            	Helper.setFehlerMeldung("Error while closing the step " + so.getTitel() + " for process " + so.getProzess().getTitel());
-	            }
-			}
-			Helper.addMessageToProcessLog(so.getProcessId(), LogType.DEBUG, "Images uploaded and step " + so.getTitel() + " finished using Massupload Plugin.");
-			HelperSchritte hs = new HelperSchritte();
-			so.setBearbeitungsbenutzer(user);
-			hs.CloseStepObjectAutomatic(so);
-			finishedInserts.add(new MassUploadedProcess(so));
-    	}
-    	
-       	Helper.setMeldung("plugin_massupload_allFilesInserted");
+        	
+        	// all images are uploaded, so we close the workflow step now
+        	// first remove all stepIds which had errors
+        	for (MassUploadedFile muf : uploadedFiles) {
+        		if (muf.getStatus()!=MassUploadedFileStatus.OK){
+        			stepIDs.remove(muf.getStepId());
+        		}
+        	}
+        	
+        	// all others can be finished now
+        	for (Integer id : stepIDs) {
+    		  	Step so = StepManager.getStepById(id);
+    			if (so.getValidationPlugin() != null && so.getValidationPlugin().length() >0) {
+    				IValidatorPlugin ivp = (IValidatorPlugin) PluginLoader.getPluginByTitle(PluginType.Validation, so.getValidationPlugin());
+    				ivp.setStep(so);
+    				if (!ivp.validate()) {
+    					log.error("Error while closing the step " + so.getTitel() + " for process " + so.getProzess().getTitel());
+    	            	Helper.setFehlerMeldung("Error while closing the step " + so.getTitel() + " for process " + so.getProzess().getTitel());
+    	            }
+    			}
+    			Helper.addMessageToProcessLog(so.getProcessId(), LogType.DEBUG, "Images uploaded and step " + so.getTitel() + " finished using Massupload Plugin.");
+    			HelperSchritte hs = new HelperSchritte();
+    			so.setBearbeitungsbenutzer(user);
+    			hs.CloseStepObjectAutomatic(so);
+    			finishedInserts.add(new MassUploadedProcess(so));
+        	}
+        	
+           	Helper.setMeldung("plugin_massupload_allFilesInserted");
+        }
     }
     
     
