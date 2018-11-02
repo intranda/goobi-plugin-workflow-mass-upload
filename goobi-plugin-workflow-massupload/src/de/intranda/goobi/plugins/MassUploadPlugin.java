@@ -36,6 +36,7 @@ import de.sub.goobi.helper.FilesystemHelper;
 import de.sub.goobi.helper.Helper;
 import de.sub.goobi.helper.HelperSchritte;
 import de.sub.goobi.helper.NIOFileUtils;
+import de.sub.goobi.helper.StorageProvider;
 import de.sub.goobi.helper.enums.StepStatus;
 import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
@@ -188,7 +189,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         try {
             File folder = new File(user.getHomeDir(), userFolderName);
             if (folder.exists() && folder.canRead()) {
-                List<Path> files = NIOFileUtils.listFiles(folder.getAbsolutePath());
+                List<Path> files = StorageProvider.getInstance().listFiles(folder.getAbsolutePath());
                 for (Path file : files) {
                     if (!file.getFileName().toString().equals(".DS_Store")) {
                         MassUploadedFile muf = new MassUploadedFile(file.toFile(), file.getFileName().toString());
@@ -237,7 +238,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         			Path src = Paths.get(muf.getFile().getAbsolutePath());
     	            Path target = Paths.get(muf.getProcessFolder(), muf.getFilename());
                     try {
-    					NIOFileUtils.copyFile(src, target);
+                    	StorageProvider.getInstance().copyFile(src, target);
     				} catch (IOException e) {
     					muf.setStatus(MassUploadedFileStatus.ERROR);
     	            	muf.setStatusmessage("File could not be copied to: " + target.toString());

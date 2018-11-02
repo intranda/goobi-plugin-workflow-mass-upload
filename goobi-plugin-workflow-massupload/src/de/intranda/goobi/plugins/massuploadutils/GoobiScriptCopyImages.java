@@ -24,6 +24,7 @@ import de.sub.goobi.forms.SessionForm;
 import de.sub.goobi.helper.Helper;
 import de.sub.goobi.helper.HelperSchritte;
 import de.sub.goobi.helper.NIOFileUtils;
+import de.sub.goobi.helper.StorageProvider;
 import de.sub.goobi.persistence.managers.StepManager;
 
 public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoobiScript {
@@ -89,7 +90,7 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
                         Path src = Paths.get(muf.getFile().getAbsolutePath());
                         Path target = Paths.get(muf.getProcessFolder(), muf.getFilename());
                         try {
-                            NIOFileUtils.copyFile(src, target);
+                            StorageProvider.getInstance().copyFile(src, target);
                         } catch (IOException e) {
                             muf.setStatus(MassUploadedFileStatus.ERROR);
                             muf.setStatusmessage("File could not be copied to: " + target.toString());
