@@ -308,7 +308,9 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         if (hitlist == null) {
             // there was no result in the cache. Get result from the DB and then add it to the cache.
             hitlist = ProcessManager.getProcesses("prozesse.titel", filter, 0, 5);
-            searchCache.put(filter, hitlist);
+            if (searchCache != null) {
+                searchCache.put(filter, hitlist);
+            }
         }
 
         // if list is empty
