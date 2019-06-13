@@ -74,7 +74,7 @@
 									<h:form id="uploadform" prependId="false"  >
 									 	<p:fileUpload fileUploadListener="#{NavigationForm.workflowPlugin.uploadFile}" id="upload" auto="true"
 											style="text-align:center;" mode="advanced" multiple="true" dragDropSupport="true"
-											label="#{msgs.plugin_massupload_selectFiles}" sizeLimit="1000000000000"
+											label="#{msgs.plugin_massupload_selectFiles}" sizeLimit="1000000000000" fileLimit="42000"
 											allowTypes="#{NavigationForm.workflowPlugin.allowedTypes}" 
 											oncomplete="if(this.files.length == 0) sortFiles()" 
 											update=":actionform"/>
