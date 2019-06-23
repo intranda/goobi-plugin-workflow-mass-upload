@@ -12,12 +12,6 @@
 		<artifactId>massupload</artifactId>
 		<version>1.0.0</version>
 	</parent>
-	<repositories>
-		<repository>
-			<id>intranda</id>
-			<url>https://nexus.intranda.com/repository/intranda</url>
-		</repository>
-	</repositories>
 	<build>
 		<finalName>${jar.name}</finalName>
 		<resources>
