@@ -61,11 +61,11 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     //    private String processnamePart;
     //    private String processnameSeparator;
     private List<String> stepTitles;
-    private List<MassUploadedFile> uploadedFiles = new ArrayList<MassUploadedFile>();
+    private List<MassUploadedFile> uploadedFiles = new ArrayList<>();
     private User user;
     private File tempFolder;
     private HashSet<Integer> stepIDs = new HashSet<>();
-    private List<MassUploadedProcess> finishedInserts = new ArrayList<MassUploadedProcess>();
+    private List<MassUploadedProcess> finishedInserts = new ArrayList<>();
     private boolean copyImagesViaGoobiScript = false;
 
     /**
@@ -185,17 +185,17 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
      */
     public void readFilesFromUserHomeFolder() {
         uploadedFiles = new ArrayList<>();
-        finishedInserts = new ArrayList<MassUploadedProcess>();
+        finishedInserts = new ArrayList<>();
         stepIDs = new HashSet<>();
         try {
             File folder = new File(user.getHomeDir(), userFolderName);
             if (folder.exists() && folder.canRead()) {
-                // we use the Files API intentionally, as we expect folders with many files in them. 
-                // The nio DirectoryStream initializes the Path objects lazily, so we don't have as many objects in memory and to create 
+                // we use the Files API intentionally, as we expect folders with many files in them.
+                // The nio DirectoryStream initializes the Path objects lazily, so we don't have as many objects in memory and to create
                 try (DirectoryStream<Path> files = Files.newDirectoryStream(folder.toPath())) {
                     Map<String, List<Process>> searchCache = new HashMap<>();
                     for (Path file : files) {
-                        if (!file.getFileName().toString().equals(".DS_Store")) {
+                        if (!Files.isDirectory(file) && !file.getFileName().toString().equals(".DS_Store")) {
                             MassUploadedFile muf = new MassUploadedFile(file.toFile(), file.getFileName().toString());
                             assignProcess(muf, searchCache);
                             uploadedFiles.add(muf);
@@ -220,7 +220,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             uploadedFile.getFile().delete();
         }
         uploadedFiles = new ArrayList<>();
-        finishedInserts = new ArrayList<MassUploadedProcess>();
+        finishedInserts = new ArrayList<>();
         stepIDs = new HashSet<>();
     }
 
