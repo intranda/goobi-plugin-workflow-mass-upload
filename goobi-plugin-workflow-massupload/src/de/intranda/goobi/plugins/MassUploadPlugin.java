@@ -1,5 +1,6 @@
 package de.intranda.goobi.plugins;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -11,10 +12,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
 
 import org.goobi.beans.Process;
 import org.goobi.beans.Step;
@@ -29,6 +33,15 @@ import org.goobi.production.plugin.interfaces.IValidatorPlugin;
 import org.goobi.production.plugin.interfaces.IWorkflowPlugin;
 import org.primefaces.event.FileUploadEvent;
 import org.primefaces.model.UploadedFile;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.LuminanceSource;
+import com.google.zxing.MultiFormatReader;
+import com.google.zxing.NotFoundException;
+import com.google.zxing.Result;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
 
 import de.intranda.goobi.plugins.massuploadutils.GoobiScriptCopyImages;
 import de.intranda.goobi.plugins.massuploadutils.MassUploadedFile;
@@ -67,6 +80,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private HashSet<Integer> stepIDs = new HashSet<>();
     private List<MassUploadedProcess> finishedInserts = new ArrayList<>();
     private boolean copyImagesViaGoobiScript = false;
+    private boolean useBarcodes = false;
 
     /**
      * Constructor
@@ -82,6 +96,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         //    	processnameSeparator = ConfigPlugins.getPluginConfig(this).getString("processname-separator", "_").toLowerCase();
         stepTitles = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getList("allowed-step");
         copyImagesViaGoobiScript = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getBoolean("copy-images-using-goobiscript", false);
+        useBarcodes = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getBoolean("use-barcodes", false);
         LoginBean login = (LoginBean) Helper.getManagedBeanValue("#{LoginForm}");
         if (login != null) {
             user = login.getMyBenutzer();
@@ -158,7 +173,9 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             }
             out.flush();
             MassUploadedFile muf = new MassUploadedFile(file, fileName);
-            assignProcess(muf, null);
+            if (!useBarcodes) {
+                assignProcessByFilename(muf, null);
+            }
             uploadedFiles.add(muf);
         } catch (IOException e) {
             log.error(e);
@@ -197,7 +214,9 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                     for (Path file : files) {
                         if (!Files.isDirectory(file) && !file.getFileName().toString().equals(".DS_Store")) {
                             MassUploadedFile muf = new MassUploadedFile(file.toFile(), file.getFileName().toString());
-                            assignProcess(muf, searchCache);
+                            if (!useBarcodes) {
+                                assignProcessByFilename(muf, searchCache);
+                            }
                             uploadedFiles.add(muf);
                         }
                     }
@@ -228,7 +247,9 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
      * All uploaded files shall now be moved to the correct processes
      */
     public void startInserting() {
-
+        if (useBarcodes) {
+            assignProcessesWithBarcodeInfo();
+        }
         if (copyImagesViaGoobiScript) {
             GoobiScriptCopyImages gsci = new GoobiScriptCopyImages();
             gsci.setUploadedFiles(uploadedFiles);
@@ -291,19 +312,23 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
      * 
      * @param uploadedFile
      */
-    private void assignProcess(MassUploadedFile uploadedFile, Map<String, List<Process>> searchCache) {
+    private void assignProcessByFilename(MassUploadedFile uploadedFile, Map<String, List<Process>> searchCache) {
         // get the relevant part of the file name
-        String matchFile = uploadedFile.getFilename().substring(0, uploadedFile.getFilename().lastIndexOf("."));
-        if (filenamePart.equals("prefix") && matchFile.contains(filenameSeparator)) {
-            matchFile = matchFile.substring(0, matchFile.lastIndexOf(filenameSeparator));
+        String identifier = uploadedFile.getFilename().substring(0, uploadedFile.getFilename().lastIndexOf("."));
+        if (filenamePart.equals("prefix") && identifier.contains(filenameSeparator)) {
+            identifier = identifier.substring(0, identifier.lastIndexOf(filenameSeparator));
         }
-        if (filenamePart.equals("suffix") && matchFile.contains(filenameSeparator)) {
-            matchFile = matchFile.substring(matchFile.lastIndexOf(filenameSeparator) + 1, matchFile.length());
+        if (filenamePart.equals("suffix") && identifier.contains(filenameSeparator)) {
+            identifier = identifier.substring(identifier.lastIndexOf(filenameSeparator) + 1, identifier.length());
         }
 
+        assignProcess(uploadedFile, searchCache, identifier);
+    }
+
+    public void assignProcess(MassUploadedFile uploadedFile, Map<String, List<Process>> searchCache, String identifier) {
         // get all matching processes
         // first try to get this from the cache
-        String filter = FilterHelper.criteriaBuilder(matchFile, false, null, null, null, true, false);
+        String filter = FilterHelper.criteriaBuilder(identifier, false, null, null, null, true, false);
         List<Process> hitlist = searchCache == null ? null : searchCache.get(filter);
         if (hitlist == null) {
             // there was no result in the cache. Get result from the DB and then add it to the cache.
@@ -365,6 +390,40 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                 }
             }
         }
+    }
+
+    public void assignProcessesWithBarcodeInfo() {
+        String currentBarcode = "";
+        Map<String, List<Process>> searchCache = new HashMap<>();
+        this.uploadedFiles.sort(Comparator.comparing(MassUploadedFile::getFilename));
+        for (MassUploadedFile muf : this.uploadedFiles) {
+            try {
+                String barcodeInfo = readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
+                if (barcodeInfo != null) {
+                    currentBarcode = barcodeInfo;
+                }
+            } catch (IOException e) {
+                log.error(e);
+            }
+            assignProcess(muf, searchCache, currentBarcode);
+        }
+    }
+
+    private static String readBarcode(File inputFile, BarcodeFormat format) throws IOException {
+        BufferedImage bufferedImage = ImageIO.read(inputFile);
+        LuminanceSource source = new BufferedImageLuminanceSource(bufferedImage);
+        BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
+
+        try {
+
+            Result result = new MultiFormatReader().decode(bitmap);
+            if (result.getBarcodeFormat() == format) {
+                return result.getText();
+            }
+        } catch (NotFoundException e) {
+            System.out.println("There is no QR code in the image");
+        }
+        return null;
     }
 
 }
