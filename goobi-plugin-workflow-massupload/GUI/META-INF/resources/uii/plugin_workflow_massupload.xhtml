@@ -100,17 +100,38 @@
     
 									<h:panelGroup rendered="#{NavigationForm.workflowPlugin.uploadedFiles.size() > 0}">
 										<h:commandLink title="#{msgs.plugin_massupload_startInserting}" 
+											rendered="#{NavigationForm.workflowPlugin.showInsertButton}"
 											action="#{NavigationForm.workflowPlugin.startInserting}"
 											styleClass="btn btn-green font-size-s margin-top-most pull-right">
 											<i class="fa fa-cog margin-right-5"/>
 											<h:outputText value="#{msgs.plugin_massupload_startInserting}" />
 										</h:commandLink>
 										
+										<h:commandLink title="#{msgs.plugin_massupload_analyzeBarcodes}" 
+											rendered="#{NavigationForm.workflowPlugin.useBarcodes and not NavigationForm.workflowPlugin.showInsertButton and not NavigationForm.workflowPlugin.analyzingBarcodes}"
+											action="#{NavigationForm.workflowPlugin.assignProcessesWithBarcodeInfo}"
+											styleClass="btn btn-blue font-size-s margin-top-most pull-right">
+											<i class="fa fa-qrcode margin-right-5"/>
+											<h:outputText value="#{msgs.plugin_massupload_analyzeBarcodes}" />
+											<f:ajax onevent="onMassuploadAjax" render="@form" />
+										</h:commandLink>
+										
+										<h:panelGroup styleClass="btn btn-blue font-size-s margin-top-most pull-right disabled"
+											rendered="#{NavigationForm.workflowPlugin.analyzingBarcodes}">
+											<i class="fa fa-cog fa-spin margin-right-5"></i>
+											#{msgs.plugin_massUpload_analyzing}
+										</h:panelGroup>
+										
 										<h:commandLink title="#{msgs.abbrechen}" 
 											action="#{NavigationForm.workflowPlugin.cleanUploadFolder}"
 											styleClass="btn font-size-s margin-top-most margin-right-5 pull-right">
 											<i class="fa fa-trash margin-right-5"/>
 											<h:outputText value="#{msgs.abbrechen}" />
+										</h:commandLink>
+										
+										<h:commandLink id="plugin_massupload_hiddenAjaxRefresh" 
+											rendered="#{NavigationForm.workflowPlugin.useBarcodes and NavigationForm.workflowPlugin.analyzingBarcodes}">
+											<f:ajax render="uploadFilesTableForm @form" />
 										</h:commandLink>
 										
 									</h:panelGroup>
@@ -121,7 +142,7 @@
 							<h:panelGroup id="actionform"  styleClass="col-sm-12">
 							<div class="row">
 							
-								<h:form rendered="#{NavigationForm.workflowPlugin.uploadedFiles.size() > 0}">
+								<h:form rendered="#{NavigationForm.workflowPlugin.uploadedFiles.size() > 0}" id="uploadFilesTableForm">
 										<hr style="margin-top:#{NavigationForm.workflowPlugin.finishedInserts.size() > 0?'20px':'20px'};"/>
 									
 									
@@ -184,6 +205,31 @@
 				</div>
 			</div>
         </h:panelGroup>
+        
+        <script>
+        	function startPolling() {
+        		if(!window.massuploadInterval) {
+        			console.log("start polling")
+	        		window.massuploadInterval = setInterval(function() {
+	        			console.log("polling...")
+	        			var button = document.querySelector('#actionarea\\:plugin_massupload_hiddenAjaxRefresh');
+	        			console.log("button", button)
+	        			if(!button) {
+	        				clearInterval(window.massuploadInterval);
+	        				return;
+	        			}
+	        			button.click();
+	        		}, 2000);
+        		}
+        	}
+        	function onMassuploadAjax(e) {
+        		console.log("onMassuploadAjax", e)
+        		if(e.status === 'success') {
+        			console.log("onmassuploadajax success");
+        			startPolling();
+        		}
+        	}
+        </script>
 
     </composite:implementation>
 

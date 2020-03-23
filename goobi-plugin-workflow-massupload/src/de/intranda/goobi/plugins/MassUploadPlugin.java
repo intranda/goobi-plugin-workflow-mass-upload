@@ -81,6 +81,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private List<MassUploadedProcess> finishedInserts = new ArrayList<>();
     private boolean copyImagesViaGoobiScript = false;
     private boolean useBarcodes = false;
+    private volatile boolean analyzingBarcodes = false;
 
     /**
      * Constructor
@@ -247,9 +248,6 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
      * All uploaded files shall now be moved to the correct processes
      */
     public void startInserting() {
-        if (useBarcodes) {
-            assignProcessesWithBarcodeInfo();
-        }
         if (copyImagesViaGoobiScript) {
             GoobiScriptCopyImages gsci = new GoobiScriptCopyImages();
             gsci.setUploadedFiles(uploadedFiles);
@@ -392,21 +390,31 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         }
     }
 
+    public boolean getShowInsertButton() {
+        return this.uploadedFiles.stream()
+                .allMatch(muf -> muf.getStatus() != MassUploadedFileStatus.UNKNWON);
+    }
+
     public void assignProcessesWithBarcodeInfo() {
-        String currentBarcode = "";
-        Map<String, List<Process>> searchCache = new HashMap<>();
-        this.uploadedFiles.sort(Comparator.comparing(MassUploadedFile::getFilename));
-        for (MassUploadedFile muf : this.uploadedFiles) {
-            try {
-                String barcodeInfo = readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
-                if (barcodeInfo != null) {
-                    currentBarcode = barcodeInfo;
+        this.analyzingBarcodes = true;
+        Runnable myRunnable = () -> {
+            String currentBarcode = "";
+            Map<String, List<Process>> searchCache = new HashMap<>();
+            this.uploadedFiles.sort(Comparator.comparing(MassUploadedFile::getFilename));
+            for (MassUploadedFile muf : this.uploadedFiles) {
+                try {
+                    String barcodeInfo = readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
+                    if (barcodeInfo != null) {
+                        currentBarcode = barcodeInfo;
+                    }
+                } catch (IOException e) {
+                    log.error(e);
                 }
-            } catch (IOException e) {
-                log.error(e);
+                assignProcess(muf, searchCache, currentBarcode);
             }
-            assignProcess(muf, searchCache, currentBarcode);
-        }
+            this.analyzingBarcodes = false;
+        };
+        new Thread(myRunnable).start();
     }
 
     private static String readBarcode(File inputFile, BarcodeFormat format) throws IOException {
@@ -421,7 +429,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                 return result.getText();
             }
         } catch (NotFoundException e) {
-            System.out.println("There is no QR code in the image");
+            System.out.println("There is no QR code in the image " + inputFile.getName());
         }
         return null;
     }
