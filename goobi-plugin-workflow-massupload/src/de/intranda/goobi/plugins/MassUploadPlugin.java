@@ -18,6 +18,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.imageio.ImageIO;
 
@@ -59,11 +64,11 @@ import de.sub.goobi.helper.exceptions.SwapException;
 import de.sub.goobi.persistence.managers.ProcessManager;
 import de.sub.goobi.persistence.managers.StepManager;
 import lombok.Data;
-import lombok.extern.log4j.Log4j;
+import lombok.extern.log4j.Log4j2;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
 
 @PluginImplementation
-@Log4j
+@Log4j2
 @Data
 public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
 
@@ -82,6 +87,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private List<MassUploadedProcess> finishedInserts = new ArrayList<>();
     private boolean copyImagesViaGoobiScript = false;
     private boolean useBarcodes = false;
+    private ExecutorService barcodePool;
     private volatile boolean analyzingBarcodes = false;
 
     /**
@@ -99,6 +105,9 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         stepTitles = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getList("allowed-step");
         copyImagesViaGoobiScript = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getBoolean("copy-images-using-goobiscript", false);
         useBarcodes = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getBoolean("use-barcodes", false);
+        if (useBarcodes) {
+            barcodePool = Executors.newFixedThreadPool(2);
+        }
         LoginBean login = (LoginBean) Helper.getManagedBeanValue("#{LoginForm}");
         if (login != null) {
             user = login.getMyBenutzer();
@@ -176,9 +185,18 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             out.flush();
             MassUploadedFile muf = new MassUploadedFile(file, fileName);
             if (useBarcodes) {
-                String barcodeInfo = readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
+                Callable<String> readBarcodeTask = () -> {
+                    return readBarcode(muf.getFile(), BarcodeFormat.QR_CODE);
+                };
+                Future<String> futureBarcode = this.barcodePool.submit(readBarcodeTask);
+                String barcodeInfo = null;
+                try {
+                    barcodeInfo = futureBarcode.get();
+                    muf.setCheckedForBarcode(true);
+                } catch (InterruptedException | ExecutionException e) {
+                    log.error(e);
+                }
                 muf.setBarcodeValue(Optional.ofNullable(barcodeInfo));
-                muf.setCheckedForBarcode(true);
             } else {
                 assignProcessByFilename(muf, null);
             }
@@ -409,7 +427,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             for (MassUploadedFile muf : this.uploadedFiles) {
                 try {
                     if (!muf.isCheckedForBarcode()) {
-                        String barcodeInfo = readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
+                        String barcodeInfo = readBarcode(muf.getFile(), BarcodeFormat.QR_CODE);
                         muf.setBarcodeValue(Optional.ofNullable(barcodeInfo));
                     }
                     if (muf.getBarcodeValue().isPresent()) {
@@ -437,7 +455,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                 return result.getText();
             }
         } catch (NotFoundException e) {
-            System.out.println("There is no QR code in the image " + inputFile.getName());
+            log.debug("There is no QR code in the image {}", inputFile.getName());
         }
         return null;
     }
