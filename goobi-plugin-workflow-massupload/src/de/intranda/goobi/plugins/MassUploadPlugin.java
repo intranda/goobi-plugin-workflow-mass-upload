@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.imageio.ImageIO;
 
@@ -174,7 +175,11 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             }
             out.flush();
             MassUploadedFile muf = new MassUploadedFile(file, fileName);
-            if (!useBarcodes) {
+            if (useBarcodes) {
+                String barcodeInfo = readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
+                muf.setBarcodeValue(Optional.ofNullable(barcodeInfo));
+                muf.setCheckedForBarcode(true);
+            } else {
                 assignProcessByFilename(muf, null);
             }
             uploadedFiles.add(muf);
@@ -403,9 +408,12 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             this.uploadedFiles.sort(Comparator.comparing(MassUploadedFile::getFilename));
             for (MassUploadedFile muf : this.uploadedFiles) {
                 try {
-                    String barcodeInfo = readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
-                    if (barcodeInfo != null) {
-                        currentBarcode = barcodeInfo;
+                    if (!muf.isCheckedForBarcode()) {
+                        String barcodeInfo = readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
+                        muf.setBarcodeValue(Optional.ofNullable(barcodeInfo));
+                    }
+                    if (muf.getBarcodeValue().isPresent()) {
+                        currentBarcode = muf.getBarcodeValue().get();
                     }
                 } catch (IOException e) {
                     log.error(e);
