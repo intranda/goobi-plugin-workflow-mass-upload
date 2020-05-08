@@ -186,7 +186,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             MassUploadedFile muf = new MassUploadedFile(file, fileName);
             if (useBarcodes) {
                 Callable<String> readBarcodeTask = () -> {
-                    return readBarcode(muf.getFile(), BarcodeFormat.QR_CODE);
+                    return readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
                 };
                 Future<String> futureBarcode = this.barcodePool.submit(readBarcodeTask);
                 String barcodeInfo = null;
@@ -427,7 +427,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             for (MassUploadedFile muf : this.uploadedFiles) {
                 try {
                     if (!muf.isCheckedForBarcode()) {
-                        String barcodeInfo = readBarcode(muf.getFile(), BarcodeFormat.QR_CODE);
+                        String barcodeInfo = readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
                         muf.setBarcodeValue(Optional.ofNullable(barcodeInfo));
                     }
                     if (muf.getBarcodeValue().isPresent()) {
@@ -447,7 +447,6 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         BufferedImage bufferedImage = ImageIO.read(inputFile);
         LuminanceSource source = new BufferedImageLuminanceSource(bufferedImage);
         BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
-
         try {
 
             Result result = new MultiFormatReader().decode(bitmap);
