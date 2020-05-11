@@ -414,8 +414,9 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     }
 
     public boolean getShowInsertButton() {
-        return this.uploadedFiles.stream()
+        boolean showInsertButton = this.uploadedFiles.size() > 0 && this.uploadedFiles.stream()
                 .allMatch(muf -> muf.getStatus() != MassUploadedFileStatus.UNKNWON);
+        return showInsertButton;
     }
 
     public void assignProcessesWithBarcodeInfo() {
