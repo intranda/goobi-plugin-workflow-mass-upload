@@ -153,7 +153,6 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     }
 
     public void sortFiles() {
-        System.out.println("called sortFiles....");
         String currentBarcode = "";
         Map<String, List<Process>> searchCache = new HashMap<>();
         this.uploadedFiles.sort(Comparator.comparing(MassUploadedFile::getFilename));
@@ -432,14 +431,8 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     }
 
     public boolean getShowInsertButton() {
-        System.out.println("getShowInsertButton");
         boolean showInsertButton = this.uploadedFiles.size() > 0 && this.uploadedFiles.stream()
                 .allMatch(muf -> muf.getStatus() != MassUploadedFileStatus.UNKNWON);
-        if (showInsertButton) {
-            for (MassUploadedFile muf : this.uploadedFiles) {
-                System.out.println("muf status: " + muf.getStatus());
-            }
-        }
         return showInsertButton;
     }
 
