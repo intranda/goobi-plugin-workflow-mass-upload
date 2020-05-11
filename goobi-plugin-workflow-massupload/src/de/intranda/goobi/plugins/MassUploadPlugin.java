@@ -153,6 +153,24 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     }
 
     public void sortFiles() {
+        System.out.println("called sortFiles....");
+        String currentBarcode = "";
+        Map<String, List<Process>> searchCache = new HashMap<>();
+        this.uploadedFiles.sort(Comparator.comparing(MassUploadedFile::getFilename));
+        for (MassUploadedFile muf : this.uploadedFiles) {
+            try {
+                if (!muf.isCheckedForBarcode()) {
+                    String barcodeInfo = readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
+                    muf.setBarcodeValue(Optional.ofNullable(barcodeInfo));
+                }
+                if (muf.getBarcodeValue().isPresent()) {
+                    currentBarcode = muf.getBarcodeValue().get();
+                }
+            } catch (IOException e) {
+                log.error(e);
+            }
+            assignProcess(muf, searchCache, currentBarcode);
+        }
         Collections.sort(uploadedFiles);
     }
 
@@ -414,9 +432,19 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     }
 
     public boolean getShowInsertButton() {
+        System.out.println("getShowInsertButton");
         boolean showInsertButton = this.uploadedFiles.size() > 0 && this.uploadedFiles.stream()
                 .allMatch(muf -> muf.getStatus() != MassUploadedFileStatus.UNKNWON);
+        if (showInsertButton) {
+            for (MassUploadedFile muf : this.uploadedFiles) {
+                System.out.println("muf status: " + muf.getStatus());
+            }
+        }
         return showInsertButton;
+    }
+
+    public boolean isShowInsertButton() {
+        return getShowInsertButton();
     }
 
     public void assignProcessesWithBarcodeInfo() {
