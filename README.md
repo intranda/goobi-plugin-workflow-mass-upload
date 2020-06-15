@@ -12,7 +12,7 @@ More information about the functionality of this plugin and the complete documen
 
 Detail | Description
 --- | ---
-**Plugin identifier**       | -
+**Plugin identifier**       | intranda_workflow_massupload
 **Plugin type**             | Workflow plugin
 **Licence**                 | GPL 2.0 or newer  
 **Documentation (German)**  | -
