@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -102,7 +103,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         filenameSeparator = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("filename-separator", "_").toLowerCase();
         //    	processnamePart = ConfigPlugins.getPluginConfig(this).getString("processname-part", "complete").toLowerCase();
         //    	processnameSeparator = ConfigPlugins.getPluginConfig(this).getString("processname-separator", "_").toLowerCase();
-        stepTitles = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getList("allowed-step");
+        stepTitles = Arrays.asList(ConfigPlugins.getPluginConfig(PLUGIN_NAME).getStringArray("allowed-step"));
         copyImagesViaGoobiScript = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getBoolean("copy-images-using-goobiscript", false);
         useBarcodes = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getBoolean("use-barcodes", false);
         if (useBarcodes) {
