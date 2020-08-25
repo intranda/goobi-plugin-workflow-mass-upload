@@ -157,19 +157,21 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         String currentBarcode = "";
         Map<String, List<Process>> searchCache = new HashMap<>();
         this.uploadedFiles.sort(Comparator.comparing(MassUploadedFile::getFilename));
-        for (MassUploadedFile muf : this.uploadedFiles) {
-            try {
-                if (!muf.isCheckedForBarcode()) {
-                    String barcodeInfo = readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
-                    muf.setBarcodeValue(Optional.ofNullable(barcodeInfo));
+        if (useBarcodes) {
+            for (MassUploadedFile muf : this.uploadedFiles) {
+                try {
+                    if (!muf.isCheckedForBarcode()) {
+                        String barcodeInfo = readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
+                        muf.setBarcodeValue(Optional.ofNullable(barcodeInfo));
+                    }
+                    if (muf.getBarcodeValue().isPresent()) {
+                        currentBarcode = muf.getBarcodeValue().get();
+                    }
+                } catch (IOException e) {
+                    log.error(e);
                 }
-                if (muf.getBarcodeValue().isPresent()) {
-                    currentBarcode = muf.getBarcodeValue().get();
-                }
-            } catch (IOException e) {
-                log.error(e);
+                assignProcess(muf, searchCache, currentBarcode);
             }
-            assignProcess(muf, searchCache, currentBarcode);
         }
         Collections.sort(uploadedFiles);
     }
