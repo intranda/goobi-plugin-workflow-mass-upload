@@ -1,29 +1,27 @@
 <config_plugin>
-	
+
 	<!-- which file types shall be allowed for uploading these -->
 	<allowed-file-extensions>/(\.|\/)(gif|jpe?g|png|tiff?|jp2|pdf)$/</allowed-file-extensions>
-    
-    <!-- name of the folder inside of a users home directory to use as alteranive for web upload -->
-    <user-folder-name>mass_upload</user-folder-name>
-	
-    <!-- define if instead of the file naming a barcode shall be analyzed to match the 
-    following images to the corresponding process until the next barcode gets recognized  -->
+
+	<!-- name of the folder inside of a users home directory to use as alternative for web upload -->
+	<user-folder-name>mass_upload</user-folder-name>
+
+	<!-- define if instead of the file naming a barcode shall be analyzed to match the following images to the corresponding process until the next barcode 
+		gets recognized -->
 	<use-barcodes>true</use-barcodes>
-	
+
 	<!-- copy images using goobi script in the background (true or false) -->
-    <copy-images-using-goobiscript>false</copy-images-using-goobiscript>
-	
+	<copy-images-using-goobiscript>false</copy-images-using-goobiscript>
+
 	<!-- which workflow step has to be open to allow the upload into the process -->
 	<allowed-step>Scanning</allowed-step>
 	<allowed-step>Upload</allowed-step>
-	
+
 	<!-- which part of the files shall be used to find the right process (prefix, suffix or complete) -->
 	<filename-part>prefix</filename-part>
 	<filename-separator>_</filename-separator>
-	
-	<!-- which part of the process title shall be used to match the right process (prefix, suffix or complete) - STILL UNUSED
-	<processname-part>complete</processname-part>
-	<processname_separator>_</processname_separator>
-	 -->
-	
+
+	<!-- which part of the process title shall be used to match the right process (prefix, suffix or complete) - STILL UNUSED <processname-part>complete</processname-part> 
+		<processname_separator>_</processname_separator> -->
+
 </config_plugin>

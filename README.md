@@ -15,8 +15,8 @@ Detail | Description
 **Plugin identifier**       | intranda_workflow_massupload
 **Plugin type**             | Workflow plugin
 **Licence**                 | GPL 2.0 or newer  
-**Documentation (German)**  | -
-**Documentation (English)** | -
+**Documentation (German)**  | https://docs.goobi.io/goobi-workflow-plugins-de/workflow/plugin-workflow-massupload
+**Documentation (English)** | https://docs.goobi.io/goobi-workflow-plugins-en/workflow/plugin-workflow-massupload
 
 ## Goobi details
 
