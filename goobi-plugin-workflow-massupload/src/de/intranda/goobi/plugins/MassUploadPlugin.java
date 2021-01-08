@@ -94,25 +94,21 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     /**
      * Constructor
      */
-    @SuppressWarnings("unchecked")
     public MassUploadPlugin() {
         log.info("Mass upload plugin started");
         allowedTypes = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("allowed-file-extensions", "/(\\.|\\/)(gif|jpe?g|png|tiff?|jp2|pdf)$/");
         filenamePart = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("filename-part", "prefix").toLowerCase();
         userFolderName = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("user-folder-name", "mass_upload").toLowerCase();
         filenameSeparator = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("filename-separator", "_").toLowerCase();
-        //    	processnamePart = ConfigPlugins.getPluginConfig(this).getString("processname-part", "complete").toLowerCase();
-        //    	processnameSeparator = ConfigPlugins.getPluginConfig(this).getString("processname-separator", "_").toLowerCase();
+        //      processnamePart = ConfigPlugins.getPluginConfig(this).getString("processname-part", "complete").toLowerCase();
+        //      processnameSeparator = ConfigPlugins.getPluginConfig(this).getString("processname-separator", "_").toLowerCase();
         stepTitles = Arrays.asList(ConfigPlugins.getPluginConfig(PLUGIN_NAME).getStringArray("allowed-step"));
         copyImagesViaGoobiScript = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getBoolean("copy-images-using-goobiscript", false);
         useBarcodes = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getBoolean("use-barcodes", false);
         if (useBarcodes) {
             barcodePool = Executors.newFixedThreadPool(2);
         }
-        LoginBean login = (LoginBean) Helper.getManagedBeanValue("#{LoginForm}");
-        if (login != null) {
-            user = login.getMyBenutzer();
-        }
+
     }
 
     @Override
@@ -130,6 +126,15 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         return "/uii/plugin_workflow_massupload.xhtml";
     }
 
+    private void readUser() {
+        if (user == null) {
+            LoginBean login = (LoginBean) Helper.getManagedBeanValue("#{LoginForm}");
+            if (login != null) {
+                user = login.getMyBenutzer();
+            }
+        }
+    }
+
     /**
      * Handle the upload of a file
      * 
@@ -138,6 +143,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     public void uploadFile(FileUploadEvent event) {
         try {
             if (tempFolder == null) {
+                readUser();
                 tempFolder = new File(ConfigurationHelper.getInstance().getTemporaryFolder(), user.getLogin());
                 if (!tempFolder.exists()) {
                     if (!tempFolder.mkdirs()) {
@@ -185,6 +191,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
      */
     private void saveFileTemporary(String fileName, InputStream in) throws IOException {
         if (tempFolder == null) {
+            readUser();
             tempFolder = new File(ConfigurationHelper.getInstance().getTemporaryFolder(), user.getLogin());
             if (!tempFolder.exists()) {
                 if (!tempFolder.mkdirs()) {
@@ -249,6 +256,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         finishedInserts = new ArrayList<>();
         stepIDs = new HashSet<>();
         try {
+            readUser();
             File folder = new File(user.getHomeDir(), userFolderName);
             if (folder.exists() && folder.canRead()) {
                 // we use the Files API intentionally, as we expect folders with many files in them.
@@ -291,6 +299,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
      * All uploaded files shall now be moved to the correct processes
      */
     public void startInserting() {
+        readUser();
         if (copyImagesViaGoobiScript) {
             GoobiScriptCopyImages gsci = new GoobiScriptCopyImages();
             gsci.setUploadedFiles(uploadedFiles);
@@ -434,9 +443,9 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     }
 
     public boolean getShowInsertButton() {
-        boolean showInsertButton = this.uploadedFiles.size() > 0 && this.uploadedFiles.stream()
-                .allMatch(muf -> muf.getStatus() != MassUploadedFileStatus.UNKNWON);
-        return showInsertButton;
+        boolean showInsertButton =
+                this.uploadedFiles.size() > 0 && this.uploadedFiles.stream().allMatch(muf -> muf.getStatus() != MassUploadedFileStatus.UNKNWON);
+                return showInsertButton;
     }
 
     public boolean isShowInsertButton() {
