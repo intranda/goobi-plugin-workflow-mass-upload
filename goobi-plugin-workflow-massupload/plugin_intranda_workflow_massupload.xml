@@ -8,7 +8,7 @@
 
 	<!-- define if instead of the file naming a barcode shall be analyzed to match the following images to the corresponding process until the next barcode 
 		gets recognized -->
-	<use-barcodes>true</use-barcodes>
+	<use-barcodes>false</use-barcodes>
 
 	<!-- copy images using goobi script in the background (true or false) -->
 	<copy-images-using-goobiscript>false</copy-images-using-goobiscript>
