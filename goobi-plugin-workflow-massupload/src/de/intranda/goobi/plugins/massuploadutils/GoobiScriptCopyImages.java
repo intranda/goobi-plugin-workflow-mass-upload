@@ -151,4 +151,15 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
         }
     }
 
+    @Override
+    public boolean isVisable() {
+        return false;
+    }
+
+    @Override
+    public String getAction() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
 }
