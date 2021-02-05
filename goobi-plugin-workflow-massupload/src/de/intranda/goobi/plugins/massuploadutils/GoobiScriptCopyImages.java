@@ -40,10 +40,10 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
     }
 
     public void setUploadedFiles(List<MassUploadedFile> uploadedFiles) {
-        SessionForm sf = (SessionForm) Helper.getManagedBeanValue("#{SessionForm}");
+        SessionForm sf = Helper.getSessionBean();
         gsm = sf.getGsm();
         ImmutableList.Builder<GoobiScriptResult> newList = ImmutableList.<GoobiScriptResult> builder().addAll(gsm.getGoobiScriptResults());
-        LoginBean login = (LoginBean) Helper.getManagedBeanValue("#{LoginForm}");
+        LoginBean login = Helper.getLoginBean();
         username = login.getMyBenutzer().getNachVorname();
         command = "copyFiles for mass upload";
 
@@ -152,7 +152,7 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
     }
 
     @Override
-    public boolean isVisable() {
+    public boolean isVisible() {
         return false;
     }
 
