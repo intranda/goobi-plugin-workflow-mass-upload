@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -43,6 +44,7 @@ import org.primefaces.model.UploadedFile;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.BinaryBitmap;
+import com.google.zxing.DecodeHintType;
 import com.google.zxing.LuminanceSource;
 import com.google.zxing.MultiFormatReader;
 import com.google.zxing.NotFoundException;
@@ -482,7 +484,8 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         LuminanceSource source = new BufferedImageLuminanceSource(bufferedImage);
         BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
         try {
-
+            Map<DecodeHintType, Boolean> hints = new TreeMap<>();
+            hints.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
             Result result = new MultiFormatReader().decode(bitmap);
             if (result.getBarcodeFormat() == format) {
                 return result.getText();
