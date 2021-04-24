@@ -486,7 +486,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         try {
             Map<DecodeHintType, Boolean> hints = new TreeMap<>();
             hints.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
-            Result result = new MultiFormatReader().decode(bitmap);
+            Result result = new MultiFormatReader().decode(bitmap, hints);
             if (result.getBarcodeFormat() == format) {
                 return result.getText();
             }
