@@ -4,8 +4,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.goobi.beans.Step;
@@ -20,9 +21,6 @@ import org.goobi.production.enums.PluginType;
 import org.goobi.production.plugin.PluginLoader;
 import org.goobi.production.plugin.interfaces.IValidatorPlugin;
 
-import com.google.common.collect.ImmutableList;
-
-import de.sub.goobi.forms.SessionForm;
 import de.sub.goobi.helper.Helper;
 import de.sub.goobi.helper.HelperSchritte;
 import de.sub.goobi.helper.StorageProvider;
@@ -33,122 +31,105 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
 
     private User user;
     private List<MassUploadedFile> uploadedFiles = new ArrayList<MassUploadedFile>();
-    int starttime;
 
     public void setUser(User user) {
         this.user = user;
     }
 
     public void setUploadedFiles(List<MassUploadedFile> uploadedFiles) {
-        SessionForm sf = Helper.getSessionBean();
-        gsm = sf.getGsm();
-        ImmutableList.Builder<GoobiScriptResult> newList = ImmutableList.<GoobiScriptResult> builder().addAll(gsm.getGoobiScriptResults());
+        this.uploadedFiles = uploadedFiles;
+
+    }
+
+    @Override
+    public List<GoobiScriptResult> prepare(List<Integer> processes, String command, Map<String, String> parameters) {
+        List<GoobiScriptResult> newList = new ArrayList<>();
+        starttime = (int) System.currentTimeMillis() / 1000;
         LoginBean login = Helper.getLoginBean();
         username = login.getMyBenutzer().getNachVorname();
-        command = "copyFiles for mass upload";
-
-        this.uploadedFiles = uploadedFiles;
-        starttime = (int) System.currentTimeMillis() / 1000;
         int count = 0;
         for (MassUploadedFile muf : uploadedFiles) {
             if (muf.getStatus() == MassUploadedFileStatus.OK) {
                 muf.setTransfered(false);
-                GoobiScriptResult gsr = new GoobiScriptResult(starttime + count++, command, username);
+                Map<String, String> mufParams = new LinkedHashMap<String, String>();
+                mufParams.put("uploadFileIndex", Integer.toString(count));
+                mufParams.put("filename", muf.getFilename());
+                GoobiScriptResult gsr = new GoobiScriptResult(muf.getProcessId(), command, mufParams, username, starttime);
+                gsr.setCustomGoobiScriptImpl(this);
                 gsr.setProcessTitle(muf.getProcessTitle());
                 newList.add(gsr);
             } else {
-                count++;
                 Helper.setFehlerMeldung("File could not be matched and gets skipped: " + muf.getFilename());
             }
+            count++;
         }
-        gsm.setGoobiScriptResults(newList.build());
+        return newList;
     }
 
     @Override
-    public boolean prepare(List<Integer> processes, String command, HashMap<String, String> parameters) {
+    public void execute(GoobiScriptResult gsr) {
+        // execute all jobs that are still in waiting state
+        gsr.updateTimestamp();
+        Integer uploadFileIndex = Integer.parseInt(gsr.getParameters().get("uploadFileIndex"));
+        MassUploadedFile muf = uploadedFiles.get(uploadFileIndex);
+        if (muf.getStatus() == MassUploadedFileStatus.OK) {
+            Path src = Paths.get(muf.getFile().getAbsolutePath());
+            Path target = Paths.get(muf.getProcessFolder(), muf.getFilename());
+            try {
+                StorageProvider.getInstance().copyFile(src, target);
+            } catch (IOException e) {
+                muf.setStatus(MassUploadedFileStatus.ERROR);
+                muf.setStatusmessage("File could not be copied to: " + target.toString());
+                logger.error("Error while copying file during mass upload goobiscript", e);
+                Helper.setFehlerMeldung("Error while copying file during mass upload goobiscript", e);
+            }
+            muf.getFile().delete();
+            muf.setTransfered(true);
+        } else {
+            Helper.setFehlerMeldung("File could not be matched and gets skipped: " + muf.getFilename());
+        }
+
+        if (muf.getStatus() == MassUploadedFileStatus.OK) {
+            Step so = StepManager.getStepById(muf.getStepId());
+            if (so.getValidationPlugin() != null && so.getValidationPlugin().length() > 0) {
+                IValidatorPlugin ivp = (IValidatorPlugin) PluginLoader.getPluginByTitle(PluginType.Validation, so.getValidationPlugin());
+                ivp.setStep(so);
+                if (!ivp.validate()) {
+                    gsr.setResultMessage("Images copied, but validation not successful.");
+                    gsr.setResultType(GoobiScriptResultType.ERROR);
+                } else {
+                    gsr.setResultMessage("Images copied and validated successfully.");
+                    gsr.setResultType(GoobiScriptResultType.OK);
+                }
+            } else {
+                gsr.setResultMessage("Images copied successfully.");
+                gsr.setResultType(GoobiScriptResultType.OK);
+            }
+            gsr.updateTimestamp();
+
+            if (gsr.getResultType() == GoobiScriptResultType.OK && isLastFileOfProcess(muf)) {
+                Helper.addMessageToProcessLog(so.getProcessId(), LogType.DEBUG,
+                        "Image uploaded and step " + so.getTitel() + " finished using Massupload Plugin via Goobiscript.");
+                HelperSchritte hs = new HelperSchritte();
+                so.setBearbeitungsbenutzer(user);
+                hs.CloseStepObjectAutomatic(so);
+            }
+        }
+    }
+
+    /**
+     * Check if there are other MassUploadedFiles in the list which are still not processed
+     * 
+     * @param muf
+     * @return
+     */
+    private boolean isLastFileOfProcess(MassUploadedFile muf) {
+        for (MassUploadedFile m : uploadedFiles) {
+            if (m.getProcessTitle() != null && m.getProcessTitle().equals(muf.getProcessTitle()) && m.isTransfered() == false) {
+                return false;
+            }
+        }
         return true;
-    }
-
-    @Override
-    public void execute() {
-        CopyImagesThread et = new CopyImagesThread();
-        et.start();
-    }
-
-    class CopyImagesThread extends Thread {
-
-        @Override
-        public void run() {
-            // execute all jobs that are still in waiting state
-            for (GoobiScriptResult gsr : gsm.getGoobiScriptResults()) {
-                boolean scriptsWaiting = gsm.getAreScriptsWaiting(command);
-                boolean isCurrentResultWaiting = gsr.getResultType() == GoobiScriptResultType.WAITING;
-                boolean isCommandThisCommand = gsr.getCommand().equals(command);
-
-                if (scriptsWaiting && isCurrentResultWaiting && isCommandThisCommand) {
-                    gsr.updateTimestamp();
-                    MassUploadedFile muf = uploadedFiles.get(gsr.getProcessId() - starttime);
-                    if (muf.getStatus() == MassUploadedFileStatus.OK) {
-                        Path src = Paths.get(muf.getFile().getAbsolutePath());
-                        Path target = Paths.get(muf.getProcessFolder(), muf.getFilename());
-                        try {
-                            StorageProvider.getInstance().copyFile(src, target);
-                        } catch (IOException e) {
-                            muf.setStatus(MassUploadedFileStatus.ERROR);
-                            muf.setStatusmessage("File could not be copied to: " + target.toString());
-                            logger.error("Error while copying file during mass upload goobiscript", e);
-                            Helper.setFehlerMeldung("Error while copying file during mass upload goobiscript", e);
-                        }
-                        muf.getFile().delete();
-                        muf.setTransfered(true);
-                    } else {
-                        Helper.setFehlerMeldung("File could not be matched and gets skipped: " + muf.getFilename());
-                    }
-
-                    if (muf.getStatus() == MassUploadedFileStatus.OK) {
-                        Step so = StepManager.getStepById(muf.getStepId());
-                        if (so.getValidationPlugin() != null && so.getValidationPlugin().length() > 0) {
-                            IValidatorPlugin ivp = (IValidatorPlugin) PluginLoader.getPluginByTitle(PluginType.Validation, so.getValidationPlugin());
-                            ivp.setStep(so);
-                            if (!ivp.validate()) {
-                                gsr.setResultMessage("Images copied, but validation not successful.");
-                                gsr.setResultType(GoobiScriptResultType.ERROR);
-                            } else {
-                                gsr.setResultMessage("Images copied and validated successfully.");
-                                gsr.setResultType(GoobiScriptResultType.OK);
-                            }
-                        } else {
-                            gsr.setResultMessage("Images copied successfully.");
-                            gsr.setResultType(GoobiScriptResultType.OK);
-                        }
-                        gsr.updateTimestamp();
-
-                        if (gsr.getResultType() == GoobiScriptResultType.OK && isLastFileOfProcess(muf)) {
-                            Helper.addMessageToProcessLog(so.getProcessId(), LogType.DEBUG,
-                                    "Image uploaded and step " + so.getTitel() + " finished using Massupload Plugin via Goobiscript.");
-                            HelperSchritte hs = new HelperSchritte();
-                            so.setBearbeitungsbenutzer(user);
-                            hs.CloseStepObjectAutomatic(so);
-                        }
-                    }
-                }
-            }
-        }
-
-        /**
-         * Check if there are other MassUploadedFiles in the list which are still not processed
-         * 
-         * @param muf
-         * @return
-         */
-        private boolean isLastFileOfProcess(MassUploadedFile muf) {
-            for (MassUploadedFile m : uploadedFiles) {
-                if (m.getProcessTitle() != null && m.getProcessTitle().equals(muf.getProcessTitle()) && m.isTransfered() == false) {
-                    return false;
-                }
-            }
-            return true;
-        }
     }
 
     @Override
@@ -159,7 +140,7 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
     @Override
     public String getAction() {
         // TODO Auto-generated method stub
-        return null;
+        return "massuploadCopyImages";
     }
 
 }
