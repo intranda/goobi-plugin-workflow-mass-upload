@@ -31,6 +31,8 @@ import javax.imageio.ImageIO;
 import org.goobi.beans.Process;
 import org.goobi.beans.Step;
 import org.goobi.beans.User;
+import org.goobi.goobiScript.GoobiScriptManager;
+import org.goobi.goobiScript.GoobiScriptResult;
 import org.goobi.managedbeans.LoginBean;
 import org.goobi.production.enums.LogType;
 import org.goobi.production.enums.PluginType;
@@ -306,7 +308,10 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             GoobiScriptCopyImages gsci = new GoobiScriptCopyImages();
             gsci.setUploadedFiles(uploadedFiles);
             gsci.setUser(user);
-            gsci.execute();
+            List<GoobiScriptResult> goobiScriptResults = gsci.prepare(null, "copyFiles for mass upload", null);
+            GoobiScriptManager gsm = Helper.getBeanByClass(GoobiScriptManager.class);
+            gsm.enqueueScripts(goobiScriptResults);
+            gsm.startWork();
             Helper.setMeldung("plugin_massupload_insertionStartedViaGoobiScript");
 
         } else {
