@@ -54,6 +54,10 @@
 			#upload .ui-fileupload-preview{
 				display: none;
 			}
+            .mup-number-info {
+                margin-bottom: 5px;
+                padding-left: 2px;
+            }
 			
 		</style>
 
@@ -145,7 +149,7 @@
 								<h:form rendered="#{NavigationForm.workflowPlugin.uploadedFiles.size() > 0}" id="uploadFilesTableForm">
 										<hr style="margin-top:#{NavigationForm.workflowPlugin.finishedInserts.size() > 0?'20px':'20px'};"/>
 									
-									
+									    <div class="mup-number-info">#{msgs.countImages}: #{NavigationForm.workflowPlugin.uploadedFiles.size()}</div>
 										<h:dataTable var="item" value="#{NavigationForm.workflowPlugin.uploadedFiles}" id="files"
 											styleClass="table table-hover table-nomargin dataTable table-bordered responsive"
 											style="border-right: 1px solid #ddd;">
