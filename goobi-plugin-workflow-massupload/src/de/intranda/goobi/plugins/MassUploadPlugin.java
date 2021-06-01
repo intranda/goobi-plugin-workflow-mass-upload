@@ -28,6 +28,7 @@ import java.util.concurrent.Future;
 
 import javax.imageio.ImageIO;
 
+import org.apache.commons.configuration.XMLConfiguration;
 import org.goobi.beans.Process;
 import org.goobi.beans.Step;
 import org.goobi.beans.User;
@@ -81,6 +82,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private String allowedTypes;
     private String filenamePart;
     private String userFolderName;
+    private String processTitleMatchType;
     private String filenameSeparator;
     //    private String processnamePart;
     //    private String processnameSeparator;
@@ -100,18 +102,20 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
      */
     public MassUploadPlugin() {
         log.info("Mass upload plugin started");
-        allowedTypes = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("allowed-file-extensions", "/(\\.|\\/)(gif|jpe?g|png|tiff?|jp2|pdf)$/");
-        filenamePart = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("filename-part", "prefix").toLowerCase();
-        userFolderName = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("user-folder-name", "mass_upload").toLowerCase();
-        filenameSeparator = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getString("filename-separator", "_").toLowerCase();
+        XMLConfiguration config =  ConfigPlugins.getPluginConfig(PLUGIN_NAME);
+        allowedTypes = config.getString("allowed-file-extensions", "/(\\.|\\/)(gif|jpe?g|png|tiff?|jp2|pdf)$/");
+        filenamePart = config.getString("filename-part", "prefix").toLowerCase();
+        userFolderName = config.getString("user-folder-name", "mass_upload").toLowerCase();
+        filenameSeparator = config.getString("filename-separator", "_").toLowerCase();
         //      processnamePart = ConfigPlugins.getPluginConfig(this).getString("processname-part", "complete").toLowerCase();
         //      processnameSeparator = ConfigPlugins.getPluginConfig(this).getString("processname-separator", "_").toLowerCase();
-        stepTitles = Arrays.asList(ConfigPlugins.getPluginConfig(PLUGIN_NAME).getStringArray("allowed-step"));
-        copyImagesViaGoobiScript = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getBoolean("copy-images-using-goobiscript", false);
-        useBarcodes = ConfigPlugins.getPluginConfig(PLUGIN_NAME).getBoolean("use-barcodes", false);
+        stepTitles = Arrays.asList(config.getStringArray("allowed-step"));
+        copyImagesViaGoobiScript = config.getBoolean("copy-images-using-goobiscript", false);
+        useBarcodes = config.getBoolean("use-barcodes", false);
         if (useBarcodes) {
             barcodePool = Executors.newFixedThreadPool(2);
         }
+        processTitleMatchType = config.getString("match-type", "contains");
 
     }
 
@@ -385,13 +389,28 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     public void assignProcess(MassUploadedFile uploadedFile, Map<String, List<Process>> searchCache, String identifier) {
         // get all matching processes
         // first try to get this from the cache
-        String filter = FilterHelper.criteriaBuilder(identifier, false, null, null, null, true, false);
-        List<Process> hitlist = searchCache == null ? null : searchCache.get(filter);
-        if (hitlist == null) {
-            // there was no result in the cache. Get result from the DB and then add it to the cache.
-            hitlist = ProcessManager.getProcesses("prozesse.titel", filter, 0, 5);
-            if (searchCache != null) {
-                searchCache.put(filter, hitlist);
+        List<Process> hitlist = null;
+        if ("exact".equals(processTitleMatchType)) {
+            hitlist = searchCache == null ? null : searchCache.get(identifier);
+            if (hitlist == null) {
+                Process p =  ProcessManager.getProcessByExactTitle(identifier);
+                if (p!=null) {
+                    hitlist = new ArrayList<>();
+                    hitlist.add(p);
+                    if (searchCache != null) {
+                        searchCache.put(identifier, hitlist);
+                    }
+                }
+            }
+        } else {
+            String filter = FilterHelper.criteriaBuilder(identifier, false, null, null, null, true, false);
+            hitlist = searchCache == null ? null : searchCache.get(filter);
+            if (hitlist == null) {
+                // there was no result in the cache. Get result from the DB and then add it to the cache.
+                hitlist = ProcessManager.getProcesses("prozesse.titel", filter, 0, 5);
+                if (searchCache != null) {
+                    searchCache.put(filter, hitlist);
+                }
             }
         }
 
@@ -452,7 +471,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     public boolean getShowInsertButton() {
         boolean showInsertButton =
                 this.uploadedFiles.size() > 0 && this.uploadedFiles.stream().allMatch(muf -> muf.getStatus() != MassUploadedFileStatus.UNKNWON);
-        return showInsertButton;
+                return showInsertButton;
     }
 
     public boolean isShowInsertButton() {

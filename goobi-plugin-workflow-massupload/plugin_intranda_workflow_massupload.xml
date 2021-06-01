@@ -21,6 +21,9 @@
 	<filename-part>prefix</filename-part>
 	<filename-separator>_</filename-separator>
 
+    <!-- define if the process title must contain the value or must match the exact title (contains or exact)  -->
+    <match-type>contains</match-type>
+    
 	<!-- which part of the process title shall be used to match the right process (prefix, suffix or complete) - STILL UNUSED <processname-part>complete</processname-part> 
 		<processname_separator>_</processname_separator> -->
 
