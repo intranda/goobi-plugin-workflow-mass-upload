@@ -85,8 +85,6 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
             }
             muf.getFile().delete();
             muf.setTransfered(true);
-        } else {
-            Helper.setFehlerMeldung("File could not be matched and gets skipped: " + muf.getFilename());
         }
 
         if (muf.getStatus() == MassUploadedFileStatus.OK) {
