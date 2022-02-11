@@ -96,13 +96,14 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private boolean useBarcodes = false;
     private ExecutorService barcodePool;
     private volatile boolean analyzingBarcodes = false;
+    private boolean currentlyInserting;
 
     /**
      * Constructor
      */
     public MassUploadPlugin() {
         log.info("Mass upload plugin started");
-        XMLConfiguration config =  ConfigPlugins.getPluginConfig(PLUGIN_NAME);
+        XMLConfiguration config = ConfigPlugins.getPluginConfig(PLUGIN_NAME);
         allowedTypes = config.getString("allowed-file-extensions", "/(\\.|\\/)(gif|jpe?g|png|tiff?|jp2|pdf)$/");
         filenamePart = config.getString("filename-part", "prefix").toLowerCase();
         userFolderName = config.getString("user-folder-name", "mass_upload").toLowerCase();
@@ -307,64 +308,76 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
      * All uploaded files shall now be moved to the correct processes
      */
     public void startInserting() {
+
+        if (this.currentlyInserting == true) {
+            return;
+        }
+        
         readUser();
-        if (copyImagesViaGoobiScript) {
-            GoobiScriptCopyImages gsci = new GoobiScriptCopyImages();
-            gsci.setUploadedFiles(uploadedFiles);
-            gsci.setUser(user);
-            List<GoobiScriptResult> goobiScriptResults = gsci.prepare(null, "copyFiles for mass upload", null);
-            GoobiScriptManager gsm = Helper.getBeanByClass(GoobiScriptManager.class);
-            gsm.enqueueScripts(goobiScriptResults);
-            gsm.startWork();
-            Helper.setMeldung("plugin_massupload_insertionStartedViaGoobiScript");
 
-        } else {
-            for (MassUploadedFile muf : uploadedFiles) {
-                if (muf.getStatus() == MassUploadedFileStatus.OK) {
-                    Path src = Paths.get(muf.getFile().getAbsolutePath());
-                    Path target = Paths.get(muf.getProcessFolder(), muf.getFilename());
-                    try {
-                        StorageProvider.getInstance().copyFile(src, target);
-                    } catch (IOException e) {
-                        muf.setStatus(MassUploadedFileStatus.ERROR);
-                        muf.setStatusmessage("File could not be copied to: " + target.toString());
-                        log.error("Error while copying file during mass upload", e);
-                        Helper.setFehlerMeldung("Error while copying file during mass upload", e);
-                    }
-                    muf.getFile().delete();
-                } else {
-                    Helper.setFehlerMeldung("File could not be matched and gets skipped: " + muf.getFilename());
-                }
-            }
+        try {
+            this.currentlyInserting = true;
 
-            // all images are uploaded, so we close the workflow step now
-            // first remove all stepIds which had errors
-            for (MassUploadedFile muf : uploadedFiles) {
-                if (muf.getStatus() != MassUploadedFileStatus.OK) {
-                    stepIDs.remove(muf.getStepId());
-                }
-            }
+            if (copyImagesViaGoobiScript) {
+                GoobiScriptCopyImages gsci = new GoobiScriptCopyImages();
+                gsci.setUploadedFiles(uploadedFiles);
+                gsci.setUser(user);
+                List<GoobiScriptResult> goobiScriptResults = gsci.prepare(null, "copyFiles for mass upload", null);
+                GoobiScriptManager gsm = Helper.getBeanByClass(GoobiScriptManager.class);
+                gsm.enqueueScripts(goobiScriptResults);
+                gsm.startWork();
+                Helper.setMeldung("plugin_massupload_insertionStartedViaGoobiScript");
 
-            // all others can be finished now
-            for (Integer id : stepIDs) {
-                Step so = StepManager.getStepById(id);
-                if (so.getValidationPlugin() != null && so.getValidationPlugin().length() > 0) {
-                    IValidatorPlugin ivp = (IValidatorPlugin) PluginLoader.getPluginByTitle(PluginType.Validation, so.getValidationPlugin());
-                    ivp.setStep(so);
-                    if (!ivp.validate()) {
-                        log.error("Error while closing the step " + so.getTitel() + " for process " + so.getProzess().getTitel());
-                        Helper.setFehlerMeldung("Error while closing the step " + so.getTitel() + " for process " + so.getProzess().getTitel());
+            } else {
+                for (MassUploadedFile muf : uploadedFiles) {
+                    if (muf.getStatus() == MassUploadedFileStatus.OK) {
+                        Path src = Paths.get(muf.getFile().getAbsolutePath());
+                        Path target = Paths.get(muf.getProcessFolder(), muf.getFilename());
+                        try {
+                            StorageProvider.getInstance().copyFile(src, target);
+                        } catch (IOException e) {
+                            muf.setStatus(MassUploadedFileStatus.ERROR);
+                            muf.setStatusmessage("File could not be copied to: " + target.toString());
+                            log.error("Error while copying file during mass upload", e);
+                            Helper.setFehlerMeldung("Error while copying file during mass upload", e);
+                        }
+                        muf.getFile().delete();
+                    } else {
+                        Helper.setFehlerMeldung("File could not be matched and gets skipped: " + muf.getFilename());
                     }
                 }
-                Helper.addMessageToProcessLog(so.getProcessId(), LogType.DEBUG,
-                        "Images uploaded and step " + so.getTitel() + " finished using Massupload Plugin.");
-                HelperSchritte hs = new HelperSchritte();
-                so.setBearbeitungsbenutzer(user);
-                hs.CloseStepObjectAutomatic(so);
-                finishedInserts.add(new MassUploadedProcess(so));
-            }
 
-            Helper.setMeldung("plugin_massupload_allFilesInserted");
+                // all images are uploaded, so we close the workflow step now
+                // first remove all stepIds which had errors
+                for (MassUploadedFile muf : uploadedFiles) {
+                    if (muf.getStatus() != MassUploadedFileStatus.OK) {
+                        stepIDs.remove(muf.getStepId());
+                    }
+                }
+
+                // all others can be finished now
+                for (Integer id : stepIDs) {
+                    Step so = StepManager.getStepById(id);
+                    if (so.getValidationPlugin() != null && so.getValidationPlugin().length() > 0) {
+                        IValidatorPlugin ivp = (IValidatorPlugin) PluginLoader.getPluginByTitle(PluginType.Validation, so.getValidationPlugin());
+                        ivp.setStep(so);
+                        if (!ivp.validate()) {
+                            log.error("Error while closing the step " + so.getTitel() + " for process " + so.getProzess().getTitel());
+                            Helper.setFehlerMeldung("Error while closing the step " + so.getTitel() + " for process " + so.getProzess().getTitel());
+                        }
+                    }
+                    Helper.addMessageToProcessLog(so.getProcessId(), LogType.DEBUG,
+                            "Images uploaded and step " + so.getTitel() + " finished using Massupload Plugin.");
+                    HelperSchritte hs = new HelperSchritte();
+                    so.setBearbeitungsbenutzer(user);
+                    hs.CloseStepObjectAutomatic(so);
+                    finishedInserts.add(new MassUploadedProcess(so));
+                }
+
+                Helper.setMeldung("plugin_massupload_allFilesInserted");
+            }
+        } finally {
+            this.currentlyInserting = false;
         }
     }
 
@@ -393,8 +406,8 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         if ("exact".equals(processTitleMatchType)) {
             hitlist = searchCache == null ? null : searchCache.get(identifier);
             if (hitlist == null) {
-                Process p =  ProcessManager.getProcessByExactTitle(identifier);
-                if (p!=null) {
+                Process p = ProcessManager.getProcessByExactTitle(identifier);
+                if (p != null) {
                     hitlist = new ArrayList<>();
                     hitlist.add(p);
                     if (searchCache != null) {
@@ -469,9 +482,14 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     }
 
     public boolean getShowInsertButton() {
+
+        if (currentlyInserting) {
+            return false;
+
+        }
         boolean showInsertButton =
                 this.uploadedFiles.size() > 0 && this.uploadedFiles.stream().allMatch(muf -> muf.getStatus() != MassUploadedFileStatus.UNKNWON);
-                return showInsertButton;
+        return showInsertButton;
     }
 
     public boolean isShowInsertButton() {
