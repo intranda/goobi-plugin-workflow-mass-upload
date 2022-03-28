@@ -112,6 +112,9 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
                 so.setBearbeitungsbenutzer(user);
                 hs.CloseStepObjectAutomatic(so);
             }
+        } else {
+            gsr.setResultMessage("The file does not exist or is not accessible.");
+            gsr.setResultType(GoobiScriptResultType.ERROR);
         }
     }
 
