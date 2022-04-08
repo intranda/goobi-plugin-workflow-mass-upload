@@ -43,7 +43,7 @@ import org.goobi.production.plugin.interfaces.IPlugin;
 import org.goobi.production.plugin.interfaces.IValidatorPlugin;
 import org.goobi.production.plugin.interfaces.IWorkflowPlugin;
 import org.primefaces.event.FileUploadEvent;
-import org.primefaces.model.UploadedFile;
+import org.primefaces.model.file.UploadedFile;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.BinaryBitmap;
@@ -161,7 +161,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                 }
             }
             UploadedFile upload = event.getFile();
-            saveFileTemporary(upload.getFileName(), upload.getInputstream());
+            saveFileTemporary(upload.getFileName(), upload.getInputStream());
         } catch (IOException e) {
             log.error("Error while uploading files", e);
         }
@@ -312,7 +312,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         if (this.currentlyInserting == true) {
             return;
         }
-        
+
         readUser();
 
         try {
@@ -489,7 +489,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         }
         boolean showInsertButton =
                 this.uploadedFiles.size() > 0 && this.uploadedFiles.stream().allMatch(muf -> muf.getStatus() != MassUploadedFileStatus.UNKNWON);
-        return showInsertButton;
+                return showInsertButton;
     }
 
     public boolean isShowInsertButton() {
