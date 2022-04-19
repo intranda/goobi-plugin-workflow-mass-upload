@@ -81,7 +81,7 @@
 							<div class="col-sm-6" >
 								<div class="draganddroparea" >
 									<h:form id="uploadform" prependId="false"  >
-									 	<p:fileUpload fileUploadListener="#{NavigationForm.workflowPlugin.uploadFile}" id="upload" auto="true"
+									 	<p:fileUpload listener="#{NavigationForm.workflowPlugin.uploadFile}" id="upload" auto="true"
 											style="text-align:center;" mode="advanced" multiple="true" dragDropSupport="true"
 											label="#{msgs.plugin_massupload_selectFiles}" sizeLimit="1000000000000" fileLimit="42000"
 											allowTypes="#{NavigationForm.workflowPlugin.allowedTypes}" 
