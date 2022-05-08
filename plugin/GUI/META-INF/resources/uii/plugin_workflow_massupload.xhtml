@@ -107,7 +107,7 @@
 									<p:remoteCommand name="sortFiles" actionListener="#{NavigationForm.workflowPlugin.sortFiles}" update="actionarea, :actionform"/>
     
 									<h:panelGroup rendered="#{NavigationForm.workflowPlugin.uploadedFiles.size() > 0}">
-										<h:commandLink title="#{msgs.plugin_massupload_startInserting}" 
+										<h:commandLink title="#{msgs.plugin_massupload_startInserting}"
 											rendered="#{NavigationForm.workflowPlugin.showInsertButton}"
 											action="#{NavigationForm.workflowPlugin.startInserting}"
 											styleClass="btn btn-green font-size-s margin-top-most pull-right">
@@ -132,6 +132,7 @@
 										
 										<h:commandLink title="#{msgs.abbrechen}" 
 											action="#{NavigationForm.workflowPlugin.cleanUploadFolder}"
+											rendered="#{NavigationForm.workflowPlugin.showInsertButton}"
 											styleClass="btn font-size-s margin-top-most margin-right-5 pull-right">
 											<i class="fa fa-trash margin-right-5"/>
 											<h:outputText value="#{msgs.abbrechen}" />
@@ -147,7 +148,7 @@
 							</div>
 							</div>
 							<!--  list of all uploaded files with action buttons -->
-							<h:panelGroup id="actionform"  styleClass="col-sm-12">
+							<h:panelGroup id="actionform" styleClass="col-sm-12">
 							<div class="row">
 							
 								<h:form rendered="#{NavigationForm.workflowPlugin.uploadedFiles.size() > 0}" id="uploadFilesTableForm">

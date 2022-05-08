@@ -97,6 +97,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private ExecutorService barcodePool;
     private volatile boolean analyzingBarcodes = false;
     private boolean currentlyInserting;
+    private boolean hideInsertButtonAfterClick = false;
 
     /**
      * Constructor
@@ -309,6 +310,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
      */
     public void startInserting() {
 
+        this.hideInsertButtonAfterClick = true;
         if (this.currentlyInserting == true) {
             return;
         }
@@ -482,6 +484,10 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     }
 
     public boolean getShowInsertButton() {
+
+        if (this.hideInsertButtonAfterClick) {
+            return false;
+        }
 
         if (currentlyInserting) {
             return false;
