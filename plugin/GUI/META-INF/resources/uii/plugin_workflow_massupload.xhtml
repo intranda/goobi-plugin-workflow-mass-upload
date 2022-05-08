@@ -6,12 +6,21 @@
     <composite:implementation>
 
 		 <style>
-			#upload .ui-widget-content {
-				border: none;
+		 
+		 	body .ui-button.ui-button-icon-only .ui-icon {
+			    position: absolute;
+			    top: 50%;
+			    left: 50%;
+			    margin-top: -0.7rem;
+			    margin-left: -0.5rem;
 			}
-			
+		 
 			#upload .ui-widget-header {
-			    background: #fff none repeat scroll 0 0;
+		 		background: #368ee0 none repeat scroll 0 0;
+		 	}
+		 
+		 	#upload .ui-widget-content {
+				border: none;
 			}
 			
 			#upload .ui-fileupload-choose {
@@ -25,6 +34,7 @@
 			
 			body .ui-fileupload .ui-fileupload-buttonbar {
 				border: 0px solid #dee2e6;
+				background-color: white !important;
 			}
 
 			#upload .ui-fileupload-buttonbar span.ui-button .ui-button-text {
@@ -134,7 +144,6 @@
 											action="#{NavigationForm.workflowPlugin.cleanUploadFolder}"
 											rendered="#{NavigationForm.workflowPlugin.showInsertButton}"
 											styleClass="btn font-size-s margin-top-most margin-right-5 pull-right">
-											<i class="fa fa-trash margin-right-5"/>
 											<h:outputText value="#{msgs.abbrechen}" />
 										</h:commandLink>
 										
