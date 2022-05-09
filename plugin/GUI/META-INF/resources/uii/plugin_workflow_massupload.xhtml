@@ -5,40 +5,6 @@
 
     <composite:implementation>
 
-		 <style>
-		 
-		 	body .ui-button.ui-button-icon-only .ui-icon {
-			    position: absolute;
-			    top: 50%;
-			    left: 50%;
-			    margin-top: -0.7rem;
-			    margin-left: -0.5rem;
-			}
-		 
-			body .ui-fileupload .ui-fileupload-buttonbar {
-				border: 0px solid #dee2e6;
-				background-color: white !important;
-			}
-		 
-			#upload .ui-widget-header {
-		 		background: #368ee0 none repeat scroll 0 0;
-		 	}
-			
-			body .ui-widget {
-    			font-size: 1.2rem;
-			}
-			
-			body .ui-fileupload .ui-fileupload-content {
-			    padding: 0.4rem;
-			}
-
-            .mup-number-info {
-                margin-bottom: 10px;
-               
-            }
-			
-		</style>
-
         <h:outputText styleClass="alert alert-danger block margin-top-most" value="#{msgs.noAccessAllowed} Plugin_Goobi_Massupload" 
         	rendered="#{!LoginForm.hasRole('Plugin_Goobi_Massupload')}"/>
         
@@ -127,7 +93,7 @@
 								<h:form rendered="#{NavigationForm.workflowPlugin.uploadedFiles.size() > 0}" id="uploadFilesTableForm">
 										<hr style="margin-top:#{NavigationForm.workflowPlugin.finishedInserts.size() > 0?'20px':'20px'};"/>
 									
-									    <div class="mup-number-info">#{msgs.countImages}: #{NavigationForm.workflowPlugin.uploadedFiles.size()}</div>
+									    <div class="margin-bottom-more">#{msgs.countImages}: #{NavigationForm.workflowPlugin.uploadedFiles.size()}</div>
 										<h:dataTable var="item" value="#{NavigationForm.workflowPlugin.uploadedFiles}" id="files"
 											styleClass="table table-hover table-nomargin dataTable table-bordered responsive"
 											style="border-right: 1px solid #ddd;">
