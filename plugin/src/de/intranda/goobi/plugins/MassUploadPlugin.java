@@ -449,7 +449,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                 uploadedFile.setProcessTitle(p.getTitel());
                 try {
                     uploadedFile.setProcessFolder(p.getImagesOrigDirectory(false));
-                } catch (IOException | InterruptedException | SwapException | DAOException e) {
+                } catch (IOException | SwapException | DAOException e) {
                     uploadedFile.setStatus(MassUploadedFileStatus.ERROR);
                     uploadedFile.setStatusmessage("Error getting the master folder: " + e.getMessage());
                 }
