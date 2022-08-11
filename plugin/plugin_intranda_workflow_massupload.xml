@@ -6,8 +6,7 @@
 	<!-- name of the folder inside of a users home directory to use as alternative for web upload -->
 	<user-folder-name>mass_upload</user-folder-name>
 
-	<!-- define if instead of the file naming a barcode shall be analyzed to match the following images to the corresponding process until the next barcode 
-		gets recognized -->
+	<!-- define if instead of the file naming a barcode shall be analyzed to match the following images to the corresponding process until the next barcode  gets recognized -->
 	<use-barcodes>false</use-barcodes>
 
 	<!-- copy images using goobi script in the background (true or false) -->
@@ -23,8 +22,8 @@
 
     <!-- define if the process title must contain the value or must match the exact title (contains or exact)  -->
     <match-type>contains</match-type>
-    
-	<!-- which part of the process title shall be used to match the right process (prefix, suffix or complete) - STILL UNUSED <processname-part>complete</processname-part> 
-		<processname_separator>_</processname_separator> -->
+
+    <!-- which part of the process title shall be used to match the right process (prefix, suffix or complete) - STILL UNUSED <processname-part>complete</processname-part>  -->
+    <!-- <processname_separator>_</processname_separator> -->
 
 </config_plugin>
