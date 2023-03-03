@@ -274,7 +274,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                 try (DirectoryStream<Path> files = Files.newDirectoryStream(folder.toPath())) {
                     Map<String, List<Process>> searchCache = new HashMap<>();
                     for (Path file : files) {
-                        if (!Files.isDirectory(file) && !file.getFileName().toString().equals(".DS_Store")) {
+                        if (!Files.isDirectory(file) && !".DS_Store".equals(file.getFileName().toString())) {
                             MassUploadedFile muf = new MassUploadedFile(file.toFile(), file.getFileName().toString());
                             if (!useBarcodes) {
                                 assignProcessByFilename(muf, searchCache);
@@ -391,10 +391,10 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private void assignProcessByFilename(MassUploadedFile uploadedFile, Map<String, List<Process>> searchCache) {
         // get the relevant part of the file name
         String identifier = uploadedFile.getFilename().substring(0, uploadedFile.getFilename().lastIndexOf("."));
-        if (filenamePart.equals("prefix") && identifier.contains(filenameSeparator)) {
+        if ("prefix".equals(filenamePart) && identifier.contains(filenameSeparator)) {
             identifier = identifier.substring(0, identifier.lastIndexOf(filenameSeparator));
         }
-        if (filenamePart.equals("suffix") && identifier.contains(filenameSeparator)) {
+        if ("suffix".equals(filenamePart) && identifier.contains(filenameSeparator)) {
             identifier = identifier.substring(identifier.lastIndexOf(filenameSeparator) + 1, identifier.length());
         }
 
@@ -422,7 +422,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             hitlist = searchCache == null ? null : searchCache.get(filter);
             if (hitlist == null) {
                 // there was no result in the cache. Get result from the DB and then add it to the cache.
-                hitlist = ProcessManager.getProcesses("prozesse.titel", filter, 0, 5);
+                hitlist = ProcessManager.getProcesses("prozesse.titel", filter, 0, 5, null);
                 if (searchCache != null) {
                     searchCache.put(filter, hitlist);
                 }
@@ -433,51 +433,49 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         if (hitlist == null || hitlist.isEmpty()) {
             uploadedFile.setStatus(MassUploadedFileStatus.ERROR);
             uploadedFile.setStatusmessage("No matching process found for this image.");
+        } else // if list is bigger then one hit
+        if (hitlist.size() > 1) {
+            StringBuilder processtitles = new StringBuilder();
+            for (Process process : hitlist) {
+                processtitles.append(process.getTitel()).append(", ");
+            }
+            uploadedFile.setStatus(MassUploadedFileStatus.ERROR);
+            uploadedFile.setStatusmessage("More than one matching process where found for this image: " + processtitles.toString());
         } else {
-            // if list is bigger then one hit
-            if (hitlist.size() > 1) {
-                String processtitles = "";
-                for (Process process : hitlist) {
-                    processtitles += process.getTitel() + ", ";
-                }
+            // we have just one hit and take it
+            Process p = hitlist.get(0);
+            uploadedFile.setProcessId(p.getId());
+            uploadedFile.setProcessTitle(p.getTitel());
+            try {
+                uploadedFile.setProcessFolder(p.getImagesOrigDirectory(false));
+            } catch (IOException | SwapException | DAOException e) {
                 uploadedFile.setStatus(MassUploadedFileStatus.ERROR);
-                uploadedFile.setStatusmessage("More than one matching process where found for this image: " + processtitles);
-            } else {
-                // we have just one hit and take it
-                Process p = hitlist.get(0);
-                uploadedFile.setProcessId(p.getId());
-                uploadedFile.setProcessTitle(p.getTitel());
-                try {
-                    uploadedFile.setProcessFolder(p.getImagesOrigDirectory(false));
-                } catch (IOException | SwapException | DAOException e) {
-                    uploadedFile.setStatus(MassUploadedFileStatus.ERROR);
-                    uploadedFile.setStatusmessage("Error getting the master folder: " + e.getMessage());
-                }
+                uploadedFile.setStatusmessage("Error getting the master folder: " + e.getMessage());
+            }
 
-                if (uploadedFile.getStatus() != MassUploadedFileStatus.ERROR) {
-                    // check if one of the open workflow steps is named as expected
-                    boolean workflowStepAsExpected = false;
+            if (uploadedFile.getStatus() != MassUploadedFileStatus.ERROR) {
+                // check if one of the open workflow steps is named as expected
+                boolean workflowStepAsExpected = false;
 
-                    for (Step s : p.getSchritte()) {
-                        if (s.getBearbeitungsstatusEnum() == StepStatus.OPEN) {
-                            for (String st : stepTitles) {
-                                if (st.equals(s.getTitel())) {
-                                    workflowStepAsExpected = true;
-                                    uploadedFile.setStepId(s.getId());
-                                    stepIDs.add(s.getId());
-                                }
+                for (Step s : p.getSchritte()) {
+                    if (s.getBearbeitungsstatusEnum() == StepStatus.OPEN) {
+                        for (String st : stepTitles) {
+                            if (st.equals(s.getTitel())) {
+                                workflowStepAsExpected = true;
+                                uploadedFile.setStepId(s.getId());
+                                stepIDs.add(s.getId());
                             }
                         }
                     }
+                }
 
-                    // if correct open step was found, remember it
-                    if (workflowStepAsExpected) {
-                        uploadedFile.setStatus(MassUploadedFileStatus.OK);
-                    } else {
-                        uploadedFile.setStatus(MassUploadedFileStatus.ERROR);
-                        uploadedFile.setStatusmessage(
-                                "Process could be found, but there is no open workflow step with correct naming that could be accepted.");
-                    }
+                // if correct open step was found, remember it
+                if (workflowStepAsExpected) {
+                    uploadedFile.setStatus(MassUploadedFileStatus.OK);
+                } else {
+                    uploadedFile.setStatus(MassUploadedFileStatus.ERROR);
+                    uploadedFile.setStatusmessage(
+                            "Process could be found, but there is no open workflow step with correct naming that could be accepted.");
                 }
             }
         }
@@ -495,7 +493,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         }
         boolean showInsertButton =
                 this.uploadedFiles.size() > 0 && this.uploadedFiles.stream().allMatch(muf -> muf.getStatus() != MassUploadedFileStatus.UNKNWON);
-                return showInsertButton;
+        return showInsertButton;
     }
 
     public boolean isShowInsertButton() {
