@@ -93,11 +93,14 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private HashSet<Integer> stepIDs = new HashSet<>();
     private transient List<MassUploadedProcess> finishedInserts = new ArrayList<>();
     private boolean copyImagesViaGoobiScript = false;
-    private boolean useBarcodes = false;
     private transient ExecutorService barcodePool;
     private volatile boolean analyzingBarcodes = false;
     private boolean currentlyInserting;
     private boolean hideInsertButtonAfterClick = false;
+
+    private boolean useBarcodesDefault = false;
+    private String[] insertModes = { "plugin_massupload_insertmode_imageName", "plugin_massupload_insertmode_barcode" };
+    private String insertMode = "plugin_massupload_insertmode_imageName";
 
     /**
      * Constructor
@@ -111,10 +114,11 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         filenameSeparator = config.getString("filename-separator", "_").toLowerCase();
         stepTitles = Arrays.asList(config.getStringArray("allowed-step"));
         copyImagesViaGoobiScript = config.getBoolean("copy-images-using-goobiscript", false);
-        useBarcodes = config.getBoolean("use-barcodes", false);
+        boolean useBarcodes = config.getBoolean("use-barcodes", false);
         if (useBarcodes) {
-            barcodePool = Executors.newFixedThreadPool(2);
+            insertMode = "plugin_massupload_insertmode_barcode";
         }
+        barcodePool = Executors.newFixedThreadPool(2);
         processTitleMatchType = config.getString("match-type", "contains");
 
     }
@@ -169,7 +173,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         String currentBarcode = "";
         Map<String, List<Process>> searchCache = new HashMap<>();
         this.uploadedFiles.sort(Comparator.comparing(MassUploadedFile::getFilename));
-        if (useBarcodes) {
+        if ("plugin_massupload_insertmode_barcode".equals(insertMode)) {
             for (MassUploadedFile muf : this.uploadedFiles) {
                 try {
                     if (!muf.isCheckedForBarcode()) {
@@ -214,7 +218,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             }
             out.flush();
             MassUploadedFile muf = new MassUploadedFile(file, fileName);
-            if (useBarcodes) {
+            if ("plugin_massupload_insertmode_barcode".equals(insertMode)) {
                 Callable<String> readBarcodeTask = () -> readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
                 Future<String> futureBarcode = this.barcodePool.submit(readBarcodeTask);
                 String barcodeInfo = null;
@@ -258,7 +262,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                     for (Path file : files) {
                         if (!Files.isDirectory(file) && !".DS_Store".equals(file.getFileName().toString())) {
                             MassUploadedFile muf = new MassUploadedFile(file.toFile(), file.getFileName().toString());
-                            if (!useBarcodes) {
+                            if ("plugin_massupload_insertmode_barcode".equals(insertMode)) {
                                 assignProcessByFilename(muf, searchCache);
                             }
                             uploadedFiles.add(muf);

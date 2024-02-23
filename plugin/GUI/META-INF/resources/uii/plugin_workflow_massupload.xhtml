@@ -15,6 +15,31 @@
 
     <composite:implementation>
 
+<style>
+.select-insertmode {
+  margin-top: 5px;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+
+.select-insertmode input[type="radio"] {
+  margin-right: 5px;
+}
+
+table.select-insertmode label {
+  font-family: "Goobi2_regular",sans-serif;
+  font-size: 1rem;
+}
+.select-insertmode label {
+  display: inline-block;
+  margin: 0;
+  padding: 2px 0 0 5px;
+  font-weight: normal;
+}
+
+</style>
+
         <h:outputText styleClass="alert alert-danger d-block" value="#{msgs.noAccessAllowed} Plugin_Goobi_Massupload" 
         	rendered="#{!LoginForm.hasRole('Plugin_Goobi_Massupload')}"/>
         
@@ -29,9 +54,29 @@
                 title="#{msgs[NavigationForm.workflowPlugin.title]}">
                 
                 <div class="row" style="padding:15px;">
-							
+                    <h:form
+                        id="insertMode"
+                        prependId="false">
+                        <div class="col-sm-8">
+                            <strong><h:outputText value="#{msgs.plugin_massupload_insertMode}:" /></strong>
+                            <h:selectOneRadio
+                                value="#{NavigationForm.workflowPlugin.insertMode}"
+                                styleClass="table__radio select-insertmode">
+                                <f:selectItems
+                                    var="selection"
+                                    value="#{NavigationForm.workflowPlugin.insertModes}"
+                                    itemLabel="#{msgs[selection]}"
+                                    itemValue="#{selection}" />
+
+                                <f:ajax />
+                            </h:selectOneRadio>
+                        </div>
+                    </h:form>
                     <!-- UPLOAD AREA -->
 					<div class="col-sm-6" >
+                    
+                                            
+                    
 						<div class="draganddroparea" >
 							<h:form id="uploadform" prependId="false"  >
 							 	<p:fileUpload listener="#{NavigationForm.workflowPlugin.uploadFile}" id="upload" auto="true"
@@ -57,6 +102,9 @@
                     <!-- ACTION AREA -->
                     <div class="col-sm-6">
                         <h:form id="actionarea">
+                        
+                        
+                        
                             <p:remoteCommand name="sortFiles" actionListener="#{NavigationForm.workflowPlugin.sortFiles}" update="actionarea, uploadBox:actionform"/>
 
                             <h:panelGroup rendered="#{NavigationForm.workflowPlugin.uploadedFiles.size() > 0}">
@@ -75,7 +123,7 @@
                                 
                                 <button
                                     title="#{msgs.plugin_massupload_analyzeBarcodes}" 
-                                    jsf:rendered="#{NavigationForm.workflowPlugin.useBarcodes and not NavigationForm.workflowPlugin.showInsertButton and not NavigationForm.workflowPlugin.analyzingBarcodes}"
+                                    jsf:rendered="#{NavigationForm.workflowPlugin.insertMode=='plugin_massupload_insertmode_barcode' and not NavigationForm.workflowPlugin.showInsertButton and not NavigationForm.workflowPlugin.analyzingBarcodes}"
                                     jsf:action="#{NavigationForm.workflowPlugin.assignProcessesWithBarcodeInfo}"
                                     styleClass="btn btn-blank float-end">
                                     <i class="fa fa-qrcode"/>
@@ -99,7 +147,7 @@
                                 </h:commandLink>
                                 
                                 <h:commandLink id="plugin_massupload_hiddenAjaxRefresh" 
-                                    rendered="#{true or NavigationForm.workflowPlugin.useBarcodes and NavigationForm.workflowPlugin.analyzingBarcodes}">
+                                    rendered="#{true or NavigationForm.workflowPlugin.insertMode=='plugin_massupload_insertmode_barcode' and NavigationForm.workflowPlugin.analyzingBarcodes}">
                                     <f:ajax render="uploadFilesTableForm @form" />
                                 </h:commandLink>
                                 
