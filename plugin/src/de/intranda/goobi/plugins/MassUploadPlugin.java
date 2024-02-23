@@ -78,23 +78,23 @@ import net.xeoh.plugins.base.annotations.PluginImplementation;
 @Data
 public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
 
+    private static final long serialVersionUID = 2487957051892555829L;
+
     private static final String PLUGIN_NAME = "intranda_workflow_massupload";
     private String allowedTypes;
     private String filenamePart;
     private String userFolderName;
     private String processTitleMatchType;
     private String filenameSeparator;
-    //    private String processnamePart;
-    //    private String processnameSeparator;
     private List<String> stepTitles;
-    private List<MassUploadedFile> uploadedFiles = new ArrayList<>();
+    private transient List<MassUploadedFile> uploadedFiles = new ArrayList<>();
     private User user;
     private File tempFolder;
     private HashSet<Integer> stepIDs = new HashSet<>();
-    private List<MassUploadedProcess> finishedInserts = new ArrayList<>();
+    private transient List<MassUploadedProcess> finishedInserts = new ArrayList<>();
     private boolean copyImagesViaGoobiScript = false;
     private boolean useBarcodes = false;
-    private ExecutorService barcodePool;
+    private transient ExecutorService barcodePool;
     private volatile boolean analyzingBarcodes = false;
     private boolean currentlyInserting;
     private boolean hideInsertButtonAfterClick = false;
@@ -109,8 +109,6 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         filenamePart = config.getString("filename-part", "prefix").toLowerCase();
         userFolderName = config.getString("user-folder-name", "mass_upload").toLowerCase();
         filenameSeparator = config.getString("filename-separator", "_").toLowerCase();
-        //      processnamePart = ConfigPlugins.getPluginConfig(this).getString("processname-part", "complete").toLowerCase();
-        //      processnameSeparator = ConfigPlugins.getPluginConfig(this).getString("processname-separator", "_").toLowerCase();
         stepTitles = Arrays.asList(config.getStringArray("allowed-step"));
         copyImagesViaGoobiScript = config.getBoolean("copy-images-using-goobiscript", false);
         useBarcodes = config.getBoolean("use-barcodes", false);
@@ -155,10 +153,8 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             if (tempFolder == null) {
                 readUser();
                 tempFolder = new File(ConfigurationHelper.getInstance().getTemporaryFolder(), user.getLogin());
-                if (!tempFolder.exists()) {
-                    if (!tempFolder.mkdirs()) {
-                        throw new IOException("Upload folder for user could not be created: " + tempFolder.getAbsolutePath());
-                    }
+                if (!tempFolder.exists() && !tempFolder.mkdirs()) {
+                    throw new IOException("Upload folder for user could not be created: " + tempFolder.getAbsolutePath());
                 }
             }
             UploadedFile upload = event.getFile();
@@ -203,17 +199,14 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         if (tempFolder == null) {
             readUser();
             tempFolder = new File(ConfigurationHelper.getInstance().getTemporaryFolder(), user.getLogin());
-            if (!tempFolder.exists()) {
-                if (!tempFolder.mkdirs()) {
-                    throw new IOException("Upload folder for user could not be created: " + tempFolder.getAbsolutePath());
-                }
+            if (!tempFolder.exists() && !tempFolder.mkdirs()) {
+                throw new IOException("Upload folder for user could not be created: " + tempFolder.getAbsolutePath());
             }
         }
 
-        OutputStream out = null;
-        try {
-            File file = new File(tempFolder, fileName);
-            out = new FileOutputStream(file);
+        File file = new File(tempFolder, fileName);
+        try (OutputStream out = new FileOutputStream(file)) {
+
             int read = 0;
             byte[] bytes = new byte[1024];
             while ((read = in.read(bytes)) != -1) {
@@ -222,23 +215,18 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             out.flush();
             MassUploadedFile muf = new MassUploadedFile(file, fileName);
             if (useBarcodes) {
-                Callable<String> readBarcodeTask = () -> {
-                    return readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
-                };
+                Callable<String> readBarcodeTask = () -> readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
                 Future<String> futureBarcode = this.barcodePool.submit(readBarcodeTask);
                 String barcodeInfo = null;
-                try {
-                    barcodeInfo = futureBarcode.get();
-                    muf.setCheckedForBarcode(true);
-                } catch (InterruptedException | ExecutionException e) {
-                    log.error(e);
-                }
+                barcodeInfo = futureBarcode.get();
+                muf.setCheckedForBarcode(true);
+
                 muf.setBarcodeValue(Optional.ofNullable(barcodeInfo));
             } else {
                 assignProcessByFilename(muf, null);
             }
             uploadedFiles.add(muf);
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException | ExecutionException e) {
             log.error(e);
         } finally {
             if (in != null) {
@@ -248,13 +236,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                     log.error(e);
                 }
             }
-            if (out != null) {
-                try {
-                    out.close();
-                } catch (IOException e) {
-                    log.error(e);
-                }
-            }
+
         }
     }
 
@@ -298,7 +280,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
      */
     public void cleanUploadFolder() {
         for (MassUploadedFile uploadedFile : uploadedFiles) {
-            uploadedFile.getFile().delete();
+            uploadedFile.getFile().delete(); //NOSONAR
         }
         uploadedFiles = new ArrayList<>();
         finishedInserts = new ArrayList<>();
@@ -311,7 +293,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     public void startInserting() {
 
         this.hideInsertButtonAfterClick = true;
-        if (this.currentlyInserting == true) {
+        if (this.currentlyInserting) {
             return;
         }
 
@@ -343,7 +325,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                             log.error("Error while copying file during mass upload", e);
                             Helper.setFehlerMeldung("Error while copying file during mass upload", e);
                         }
-                        muf.getFile().delete();
+                        muf.getFile().delete(); //NOSONAR
                     } else {
                         Helper.setFehlerMeldung("File could not be matched and gets skipped: " + muf.getFilename());
                     }
@@ -368,7 +350,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                             Helper.setFehlerMeldung("Error while closing the step " + so.getTitel() + " for process " + so.getProzess().getTitel());
                         }
                     }
-                    Helper.addMessageToProcessLog(so.getProcessId(), LogType.DEBUG,
+                    Helper.addMessageToProcessJournal(so.getProcessId(), LogType.DEBUG,
                             "Images uploaded and step " + so.getTitel() + " finished using Massupload Plugin.");
                     HelperSchritte hs = new HelperSchritte();
                     so.setBearbeitungsbenutzer(user);
@@ -491,9 +473,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             return false;
 
         }
-        boolean showInsertButton =
-                this.uploadedFiles.size() > 0 && this.uploadedFiles.stream().allMatch(muf -> muf.getStatus() != MassUploadedFileStatus.UNKNWON);
-        return showInsertButton;
+        return !this.uploadedFiles.isEmpty() && this.uploadedFiles.stream().allMatch(muf -> muf.getStatus() != MassUploadedFileStatus.UNKNWON);
     }
 
     public boolean isShowInsertButton() {

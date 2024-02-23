@@ -2,6 +2,7 @@
 	<target name="devbuild">
 		<exec executable="mvn">
 			<arg value="package"/>
+            <arg value="-Dmaven.test.skip=true" />
 		</exec>
 		<copy file="module-main/target/plugin_intranda_workflow_massupload.jar" todir="/opt/digiverso/goobi/plugins/workflow/"/>
 		<copy file="module-gui/target/plugin_intranda_workflow_massupload-GUI.jar" todir="/opt/digiverso/goobi/plugins/GUI/"/>

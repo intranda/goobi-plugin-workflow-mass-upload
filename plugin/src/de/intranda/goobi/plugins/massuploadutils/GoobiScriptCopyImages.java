@@ -30,7 +30,7 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
     private static final Logger logger = Logger.getLogger(GoobiScriptCopyImages.class);
 
     private User user;
-    private List<MassUploadedFile> uploadedFiles = new ArrayList<MassUploadedFile>();
+    private List<MassUploadedFile> uploadedFiles = new ArrayList<>();
 
     public void setUser(User user) {
         this.user = user;
@@ -51,7 +51,7 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
         for (MassUploadedFile muf : uploadedFiles) {
             if (muf.getStatus() == MassUploadedFileStatus.OK) {
                 muf.setTransfered(false);
-                Map<String, String> mufParams = new LinkedHashMap<String, String>();
+                Map<String, String> mufParams = new LinkedHashMap<>();
                 mufParams.put("uploadFileIndex", Integer.toString(count));
                 mufParams.put("filename", muf.getFilename());
                 GoobiScriptResult gsr = new GoobiScriptResult(muf.getProcessId(), command, mufParams, username, starttime);
@@ -83,7 +83,7 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
                 logger.error("Error while copying file during mass upload goobiscript", e);
                 Helper.setFehlerMeldung("Error while copying file during mass upload goobiscript", e);
             }
-            muf.getFile().delete();
+            muf.getFile().delete(); //NOSONAR
             muf.setTransfered(true);
         }
 
@@ -106,7 +106,7 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
             gsr.updateTimestamp();
 
             if (gsr.getResultType() == GoobiScriptResultType.OK && isLastFileOfProcess(muf)) {
-                Helper.addMessageToProcessLog(so.getProcessId(), LogType.DEBUG,
+                Helper.addMessageToProcessJournal(so.getProcessId(), LogType.DEBUG,
                         "Image uploaded and step " + so.getTitel() + " finished using Massupload Plugin via Goobiscript.");
                 HelperSchritte hs = new HelperSchritte();
                 so.setBearbeitungsbenutzer(user);
@@ -126,7 +126,7 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
      */
     private boolean isLastFileOfProcess(MassUploadedFile muf) {
         for (MassUploadedFile m : uploadedFiles) {
-            if (m.getProcessTitle() != null && m.getProcessTitle().equals(muf.getProcessTitle()) && m.isTransfered() == false) {
+            if (m.getProcessTitle() != null && m.getProcessTitle().equals(muf.getProcessTitle()) && !m.isTransfered()) {
                 return false;
             }
         }
@@ -140,7 +140,6 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
 
     @Override
     public String getAction() {
-        // TODO Auto-generated method stub
         return "massuploadCopyImages";
     }
 
