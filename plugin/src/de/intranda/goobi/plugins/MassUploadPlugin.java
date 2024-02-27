@@ -102,6 +102,9 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private String[] insertModes = { "plugin_massupload_insertmode_imageName", "plugin_massupload_insertmode_barcode" };
     private String insertMode = "plugin_massupload_insertmode_imageName";
 
+    // use file upload or insert files from user home
+    private boolean useUpload;
+
     /**
      * Constructor
      */
@@ -153,6 +156,8 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
      * @param event
      */
     public void uploadFile(FileUploadEvent event) {
+        useUpload = true;
+
         try {
             if (tempFolder == null) {
                 readUser();
@@ -248,6 +253,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
      * do not upload the images from web UI, use images of subfolder in user home directory instead, usually called 'mass_upload'
      */
     public void readFilesFromUserHomeFolder() {
+        useUpload = false;
         uploadedFiles = new ArrayList<>();
         finishedInserts = new ArrayList<>();
         stepIDs = new HashSet<>();
@@ -283,8 +289,10 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
      * Cancel the entire process and delete the uploaded files
      */
     public void cleanUploadFolder() {
-        for (MassUploadedFile uploadedFile : uploadedFiles) {
-            uploadedFile.getFile().delete(); //NOSONAR
+        if (useUpload) {
+            for (MassUploadedFile uploadedFile : uploadedFiles) {
+                uploadedFile.getFile().delete(); //NOSONAR
+            }
         }
         uploadedFiles = new ArrayList<>();
         finishedInserts = new ArrayList<>();
