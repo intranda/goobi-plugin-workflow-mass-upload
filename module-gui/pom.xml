@@ -2,10 +2,10 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.goobi.workflow.plugin</groupId>
-    <artifactId>plugin-workflow-massupload</artifactId>
+    <artifactId>plugin-workflow-mass-upload</artifactId>
     <version>24.03-SNAPSHOT</version>
   </parent>
-  <artifactId>plugin-workflow-massupload-gui</artifactId>
+  <artifactId>plugin-workflow-mass-upload-gui</artifactId>
   <packaging>jar</packaging>
   <build>
     <resources>
