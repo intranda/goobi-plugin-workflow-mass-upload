@@ -43,16 +43,33 @@ pipeline {
       }
     }
 
-    stage('deploy-libs') {
+    stage('deploy-snapshot-libs') {
       when {
         anyOf {
-          branch 'master'
           branch 'develop'
         }
       }
       steps {
         script {
           if (fileExists('module-lib/pom.xml')) {
+            sh 'cat pom.xml | grep "SNAPSHOT"'
+            sh 'mvn -N deploy'
+            sh 'mvn -f module-lib/pom.xml deploy'
+          }
+        }
+      }
+    }
+
+    stage('deploy-release-libs') {
+      when {
+        anyOf {
+          branch 'master'
+        }
+      }
+      steps {
+        script {
+          if (fileExists('module-lib/pom.xml')) {
+            sh 'cat pom.xml | grep "SNAPSHOT" || true'
             sh 'mvn -N deploy'
             sh 'mvn -f module-lib/pom.xml deploy'
           }
