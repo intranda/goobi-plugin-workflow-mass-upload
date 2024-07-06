@@ -97,8 +97,9 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private volatile boolean analyzingBarcodes = false;
     private boolean currentlyInserting;
     private boolean hideInsertButtonAfterClick = false;
+    private String detectionType;
 
-    private boolean useBarcodesDefault = false;
+    //        private boolean useBarcodesDefault = false;
     private String[] insertModes = { "plugin_massupload_insertmode_imageName", "plugin_massupload_insertmode_barcode" };
     private String insertMode = "plugin_massupload_insertmode_imageName";
 
@@ -117,8 +118,10 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         filenameSeparator = config.getString("filename-separator", "_").toLowerCase();
         stepTitles = Arrays.asList(config.getStringArray("allowed-step"));
         copyImagesViaGoobiScript = config.getBoolean("copy-images-using-goobiscript", false);
-        boolean useBarcodes = config.getBoolean("use-barcodes", false);
-        if (useBarcodes) {
+        detectionType = config.getString("detection-type", "filename").toLowerCase();
+
+        //        boolean useBarcodes = config.getBoolean("use-barcodes", false);
+        if ("barcode".equals(detectionType)) {
             insertMode = "plugin_massupload_insertmode_barcode";
         }
         barcodePool = Executors.newFixedThreadPool(2);
@@ -269,7 +272,15 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                         if (!Files.isDirectory(file) && !".DS_Store".equals(file.getFileName().toString())) {
                             MassUploadedFile muf = new MassUploadedFile(file.toFile(), file.getFileName().toString());
                             if ("plugin_massupload_insertmode_barcode".equals(insertMode)) {
-                                assignProcessByFilename(muf, searchCache);
+                                Callable<String> readBarcodeTask = () -> readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
+                                Future<String> futureBarcode = this.barcodePool.submit(readBarcodeTask);
+                                String barcodeInfo = null;
+                                barcodeInfo = futureBarcode.get();
+                                muf.setCheckedForBarcode(true);
+
+                                muf.setBarcodeValue(Optional.ofNullable(barcodeInfo));
+                            } else {
+                                assignProcessByFilename(muf, null);
                             }
                             uploadedFiles.add(muf);
                         }

@@ -29,11 +29,13 @@
                     icon="fa-plug"
                     title="#{msgs[NavigationForm.workflowPlugin.title]}">
                 </intranda:boxTitle>
+                
                 <!-- UPLOAD AREA -->
                 <h:form
                     id="insertMode"
                     styleClass="form-row"
-                    prependId="false">
+                    prependId="false"
+                    rendered="#{NavigationForm.workflowPlugin.detectionType eq 'user'}">
                     <div class="form-label">
                         <h:outputText value="#{msgs.plugin_massupload_insertMode}:" />
                     </div>
@@ -52,7 +54,7 @@
                 </h:form>
                 <div class="d-flex">
                     <h:form id="uploadform" prependId="false" styleClass="draganddroparea m-2">
-                            <p:fileUpload
+                        <p:fileUpload
                             listener="#{NavigationForm.workflowPlugin.uploadFile}"
                             id="upload"
                             auto="true"
@@ -68,7 +70,7 @@
                             update="uploadBox:actionform"/>
                     </h:form>
                 </div>
-                <!-- // UPLOAD AREA -->
+                
                 <h:form styleClass="box__actions">
                     <h:commandLink
                         title="#{msgs.plugin_massupload_use_home_directory}"
@@ -77,6 +79,10 @@
                         <h:outputText value="#{msgs.plugin_massupload_use_home_directory}" />
                     </h:commandLink>
                 </h:form>
+                <!-- // UPLOAD AREA -->
+                
+                
+                <!-- FILE LIST -->
                 <h:panelGroup layout="block" id="actionform" styleClass="px-3">
                     <h:form rendered="#{NavigationForm.workflowPlugin.uploadedFiles.size() > 0}" id="uploadFilesTableForm">
                         <div class="gw-table gw-table-fixed">
@@ -132,6 +138,9 @@
                         </div>
                     </h:form>
                 </h:panelGroup>
+                <!-- // FILE LIST -->
+                
+                
                 <!-- ACTION AREA -->
                 <h:form id="actionarea" styleClass="box__actions">
                     <p:remoteCommand
@@ -183,6 +192,7 @@
                     </h:panelGroup>
                 </h:form>
                 <!-- // ACTION AREA -->
+                
             </intranda:box>
         </ui:fragment>
         <script>
