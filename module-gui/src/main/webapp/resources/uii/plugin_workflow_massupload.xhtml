@@ -1,241 +1,204 @@
-<ui:composition 
-    xmlns="http://www.w3.org/1999/xhtml" 
-    xmlns:ui="http://xmlns.jcp.org/jsf/facelets" 
-    xmlns:composite="http://xmlns.jcp.org/jsf/composite" 
-    xmlns:h="http://xmlns.jcp.org/jsf/html" 
-    xmlns:f="http://xmlns.jcp.org/jsf/core" 
-    xmlns:x="http://myfaces.apache.org/tomahawk" 
-    xmlns:intranda="http://xmlns.jcp.org/jsf/composite/compositesPG" 
-    xmlns:pt="http://xmlns.jcp.org/jsf/passthrough" 
+<ui:composition
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+    xmlns:composite="http://xmlns.jcp.org/jsf/composite"
+    xmlns:h="http://xmlns.jcp.org/jsf/html"
+    xmlns:f="http://xmlns.jcp.org/jsf/core"
+    xmlns:x="http://myfaces.apache.org/tomahawk"
+    xmlns:intranda="http://xmlns.jcp.org/jsf/composite/compositesPG"
+    xmlns:pt="http://xmlns.jcp.org/jsf/passthrough"
     xmlns:p="http://primefaces.org/ui"
     xmlns:jsf="http://xmlns.jcp.org/jsf">
-
     <composite:interface>
     </composite:interface>
-
     <composite:implementation>
-
-<style>
-.select-insertmode {
-  margin-top: 5px;
-  margin-bottom: 10px;
-  width: 100%;
-}
-
-
-.select-insertmode input[type="radio"] {
-  margin-right: 5px;
-}
-
-table.select-insertmode label {
-  font-family: "Goobi2_regular",sans-serif;
-  font-size: 1rem;
-}
-.select-insertmode label {
-  display: inline-block;
-  margin: 0;
-  padding: 2px 0 0 5px;
-  font-weight: normal;
-}
-
-</style>
-
-        <h:outputText styleClass="alert alert-danger d-block" value="#{msgs.noAccessAllowed} Plugin_Goobi_Massupload" 
-        	rendered="#{!LoginForm.hasRole('Plugin_Goobi_Massupload')}"/>
-        
+        <h:panelGroup
+            rendered="#{!LoginForm.hasRole('Plugin_Goobi_Massupload')}"
+            styleClass="color-box bg-hot text-white d-flex flex-row p-3">
+            <h:outputText
+                value="#{msgs.noAccessAllowed} Plugin_Goobi_Massupload" />
+        </h:panelGroup>
         <ui:fragment rendered="#{LoginForm.hasRole('Plugin_Goobi_Massupload')}">
-        
             <intranda:box
                 id="uploadBox"
-                boxType="neutral"
-                boxPadding="true"
-                boxClass="mb-3"
-                icon="fa-plug"
-                title="#{msgs[NavigationForm.workflowPlugin.title]}">
+                boxTitle="false"
+                boxType="action"
+                boxPadding="false"
+                boxClass="mb-3">
+                <intranda:boxTitle
+                    icon="fa-plug"
+                    title="#{msgs[NavigationForm.workflowPlugin.title]}">
+                </intranda:boxTitle>
                 
-                <div class="row" style="padding:15px;">
-                    <h:form
-                        id="insertMode"
-                        prependId="false">
-                        <div class="col-sm-8">
-                            <strong><h:outputText value="#{msgs.plugin_massupload_insertMode}:" /></strong>
-                            <h:selectOneRadio
-                                value="#{NavigationForm.workflowPlugin.insertMode}"
-                                styleClass="table__radio select-insertmode">
-                                <f:selectItems
-                                    var="selection"
-                                    value="#{NavigationForm.workflowPlugin.insertModes}"
-                                    itemLabel="#{msgs[selection]}"
-                                    itemValue="#{selection}" />
-
-                                <f:ajax />
-                            </h:selectOneRadio>
-                        </div>
-                    </h:form>
-                    <!-- UPLOAD AREA -->
-					<div class="col-sm-6" >
-                    
-                                            
-                    
-						<div class="draganddroparea" >
-							<h:form id="uploadform" prependId="false"  >
-							 	<p:fileUpload listener="#{NavigationForm.workflowPlugin.uploadFile}" id="upload" auto="true"
-									style="text-align:center;" mode="advanced" multiple="true" dragDropSupport="true"
-									label="#{msgs.plugin_massupload_selectFiles}" sizeLimit="1000000000000" fileLimit="42000"
-									previewWidth="0"
-                                    allowTypes="#{NavigationForm.workflowPlugin.allowedTypes}" 
-									oncomplete="if(this.files.length == 0) sortFiles()" 
-									update="uploadBox:actionform"/>
-							</h:form>
-						</div>
-						<h:form>
-							<h:commandLink title="#{msgs.plugin_massupload_use_home_directory}" 
-								action="#{NavigationForm.workflowPlugin.readFilesFromUserHomeFolder}"
-								styleClass="float-end font-light mt-2">
-								
-								<h:outputText value="#{msgs.plugin_massupload_use_home_directory}" />
-							</h:commandLink>
-						</h:form>
-					</div>
-                    <!-- // UPLOAD AREA -->
-                    
-                    <!-- ACTION AREA -->
-                    <div class="col-sm-6">
-                        <h:form id="actionarea">
-                        
-                        
-                        
-                            <p:remoteCommand name="sortFiles" actionListener="#{NavigationForm.workflowPlugin.sortFiles}" update="actionarea, uploadBox:actionform"/>
-
-                            <h:panelGroup rendered="#{NavigationForm.workflowPlugin.uploadedFiles.size() > 0}">
-                                
-                                <button
-                                    title="#{msgs.plugin_massupload_startInserting}"
-                                    jsf:rendered="#{NavigationForm.workflowPlugin.showInsertButton}"
-                                    jsf:action="#{NavigationForm.workflowPlugin.startInserting}"
-                                    type="submit"
-                                    class="btn btn-success float-end">
-                                    <i class="fa fa-cog"/>
-                                    <span>
-                                        <h:outputText value="#{msgs.plugin_massupload_startInserting}" />
-                                    </span>
-                                </button>
-                                
-                                <button
-                                    title="#{msgs.plugin_massupload_analyzeBarcodes}" 
-                                    jsf:rendered="#{NavigationForm.workflowPlugin.insertMode=='plugin_massupload_insertmode_barcode' and not NavigationForm.workflowPlugin.showInsertButton and not NavigationForm.workflowPlugin.analyzingBarcodes}"
-                                    jsf:action="#{NavigationForm.workflowPlugin.assignProcessesWithBarcodeInfo}"
-                                    styleClass="btn btn-blank float-end">
-                                    <i class="fa fa-qrcode"/>
-                                    <span>
-                                        <h:outputText value="#{msgs.plugin_massupload_analyzeBarcodes}" />
-                                    </span>
-                                    <f:ajax onevent="onMassuploadAjax" render="@form" />
-                                </button>
-                                
-                                <h:panelGroup styleClass="btn btn-blue font-size-s margin-top-most pull-right disabled"
-                                    rendered="#{NavigationForm.workflowPlugin.analyzingBarcodes}">
-                                    <i class="fa fa-cog fa-spin"></i>
-                                    #{msgs.plugin_massUpload_analyzing}
-                                </h:panelGroup>
-                                
-                                <h:commandLink title="#{msgs.abbrechen}" 
-                                    action="#{NavigationForm.workflowPlugin.cleanUploadFolder}"
-                                    rendered="#{NavigationForm.workflowPlugin.showInsertButton}"
-                                    styleClass="btn btn-blank me-3 float-end">
-                                    <h:outputText value="#{msgs.abbrechen}" />
-                                </h:commandLink>
-                                
-                                <h:commandLink id="plugin_massupload_hiddenAjaxRefresh" 
-                                    rendered="#{true or NavigationForm.workflowPlugin.insertMode=='plugin_massupload_insertmode_barcode' and NavigationForm.workflowPlugin.analyzingBarcodes}">
-                                    <f:ajax render="uploadFilesTableForm @form" />
-                                </h:commandLink>
-                                
-                            </h:panelGroup>
-                        </h:form>
+                <!-- UPLOAD AREA -->
+                <h:form
+                    id="insertMode"
+                    styleClass="form-row"
+                    prependId="false"
+                    rendered="#{NavigationForm.workflowPlugin.detectionType eq 'user'}">
+                    <div class="form-label">
+                        <h:outputText value="#{msgs.plugin_massupload_insertMode}:" />
                     </div>
-                    <!-- // ACTION AREA -->
-                    
+                    <div class="form-input">
+                        <h:selectOneRadio
+                            value="#{NavigationForm.workflowPlugin.insertMode}"
+                            styleClass="select-radio select-radio-horizontal select-insertmode">
+                            <f:selectItems
+                                var="selection"
+                                value="#{NavigationForm.workflowPlugin.insertModes}"
+                                itemLabel="#{msgs[selection]}"
+                                itemValue="#{selection}" />
+                            <f:ajax />
+                        </h:selectOneRadio>
+                    </div>
+                </h:form>
+                <div class="d-flex">
+                    <h:form id="uploadform" prependId="false" styleClass="draganddroparea m-2">
+                        <p:fileUpload
+                            listener="#{NavigationForm.workflowPlugin.uploadFile}"
+                            id="upload"
+                            auto="true"
+                            mode="advanced"
+                            multiple="true"
+                            dragDropSupport="true"
+                            label="#{msgs.plugin_massupload_selectFiles}"
+                            sizeLimit="1000000000000"
+                            fileLimit="42000"
+                            previewWidth="0"
+                            allowTypes="#{NavigationForm.workflowPlugin.allowedTypes}"
+                            oncomplete="if(this.files.length == 0) sortFiles()"
+                            update="uploadBox:actionform"/>
+                    </h:form>
                 </div>
                 
+                <h:form styleClass="box__actions">
+                    <h:commandLink
+                        title="#{msgs.plugin_massupload_use_home_directory}"
+                        action="#{NavigationForm.workflowPlugin.readFilesFromUserHomeFolder}"
+                        styleClass="btn btn-blank">
+                        <h:outputText value="#{msgs.plugin_massupload_use_home_directory}" />
+                    </h:commandLink>
+                </h:form>
+                <!-- // UPLOAD AREA -->
                 
-                <h:panelGroup id="actionform" styleClass="col-sm-12">
-                    <div class="row">
-                    
-                        <h:form rendered="#{NavigationForm.workflowPlugin.uploadedFiles.size() > 0}" id="uploadFilesTableForm">
-                            <hr/>
-                            
-                            <div class="gw-table gw-table-fixed">
-                                <div class="gw-table__search">
-                                    <div class="gw-table__search__length">
-                                        <h:outputText value="#{msgs.countImages}: #{NavigationForm.workflowPlugin.uploadedFiles.size()}" />
-                                    </div>
-                                </div>
-                                
-                                <div class="gw-table-fixed__wrapper">
-
-                                    <h:dataTable var="item" value="#{NavigationForm.workflowPlugin.uploadedFiles}" 
-                                        id="files" 
-                                        styleClass="table table-hover table-bordered">
-    
-                                        <h:column>
-                                            <f:facet name="header">
-                                                <h:outputText value="#{msgs.datei}" />
-                                            </f:facet>
-                                            <h:outputText value="#{item.filename}" title="#{item.file.absolutePath}" />
-                                        </h:column>
-                                        
-                                        <h:column>
-                                            <f:facet name="header">
-                                                <h:outputText value="#{msgs.prozess}" />
-                                            </f:facet>
-                                            <h:outputText value="#{item.processTitle == null or item.processTitle eq ''?'-':item.processTitle}" title="#{item.processFolder}" />
-                                        </h:column>
-                                        
-                                        <h:column>
-                                            <f:facet name="header">
-                                                <h:outputText value="#{msgs.prozesseID}" />
-                                            </f:facet>
-                                            <h:outputText value="#{item.processId eq '0'?'-':item.processId}" />
-                                        </h:column>
-                                        
-                                        <h:column>
-                                            <f:facet name="header">
-                                                <h:outputText value="#{msgs.arbeitsschritt}" />
-                                            </f:facet>
-                                            <h:outputText value="#{item.stepId eq '0'?'-':item.stepId}" />
-                                        </h:column>
-                                        
-                                        <h:column>
-                                            <f:facet name="header">
-                                                <h:outputText value="#{msgs.status}" />
-                                            </f:facet>
-                                            <h:outputText value="#{item.status}" title="#{item.statusmessage}" styleClass="badge #{item.status == 'OK' ? 'badge-intranda-green' : file.status == 'UNKNOWN'?'badge-intranda-orange':'badge-intranda-red'}" />
-                                        </h:column>
-                                        
-                                        <h:column>
-                                            <f:facet name="header">
-                                                <h:outputText value="#{msgs.description}" />
-                                            </f:facet>
-                                            <h:outputText value="#{item.statusmessage}"/>
-                                        </h:column>
-    
-                                    </h:dataTable>
-    
+                
+                <!-- FILE LIST -->
+                <h:panelGroup layout="block" id="actionform" styleClass="px-3">
+                    <h:form rendered="#{NavigationForm.workflowPlugin.uploadedFiles.size() > 0}" id="uploadFilesTableForm">
+                        <div class="gw-table gw-table-fixed">
+                            <div class="gw-table__search">
+                                <div class="gw-table__search__length">
+                                    <h:outputText value="#{msgs.countImages}: #{NavigationForm.workflowPlugin.uploadedFiles.size()}" />
                                 </div>
                             </div>
-                            
-                        </h:form>
+                            <div class="gw-table__wrapper">
+                                <h:dataTable
+                                    var="item"
+                                    value="#{NavigationForm.workflowPlugin.uploadedFiles}"
+                                    id="files"
+                                    styleClass="table table-hover table-bordered border-start border-end">
+                                    <h:column>
+                                        <f:facet name="header">
+                                            <h:outputText value="#{msgs.datei}" />
+                                        </f:facet>
+                                        <h:outputText value="#{item.filename}" title="#{item.file.absolutePath}" />
+                                    </h:column>
+                                    <h:column>
+                                        <f:facet name="header">
+                                            <h:outputText value="#{msgs.prozess}" />
+                                        </f:facet>
+                                        <h:outputText value="#{item.processTitle == null or item.processTitle eq ''?'-':item.processTitle}" title="#{item.processFolder}" />
+                                    </h:column>
+                                    <h:column>
+                                        <f:facet name="header">
+                                            <h:outputText value="#{msgs.prozesseID}" />
+                                        </f:facet>
+                                        <h:outputText value="#{item.processId eq '0'?'-':item.processId}" />
+                                    </h:column>
+                                    <h:column>
+                                        <f:facet name="header">
+                                            <h:outputText value="#{msgs.arbeitsschritt}" />
+                                        </f:facet>
+                                        <h:outputText value="#{item.stepId eq '0'?'-':item.stepId}" />
+                                    </h:column>
+                                    <h:column>
+                                        <f:facet name="header">
+                                            <h:outputText value="#{msgs.status}" />
+                                        </f:facet>
+                                        <h:outputText value="#{item.status}" title="#{item.statusmessage}" styleClass="badge #{item.status == 'OK' ? 'badge-intranda-green' : file.status == 'UNKNOWN'?'badge-intranda-orange':'badge-intranda-red'}" />
+                                    </h:column>
+                                    <h:column>
+                                        <f:facet name="header">
+                                            <h:outputText value="#{msgs.description}" />
+                                        </f:facet>
+                                        <h:outputText value="#{item.statusmessage}"/>
+                                    </h:column>
+                                </h:dataTable>
+                            </div>
                         </div>
+                    </h:form>
+                </h:panelGroup>
+                <!-- // FILE LIST -->
+                
+                
+                <!-- ACTION AREA -->
+                <h:form id="actionarea" styleClass="box__actions">
+                    <p:remoteCommand
+                        name="sortFiles"
+                        actionListener="#{NavigationForm.workflowPlugin.sortFiles}"
+                        update="actionarea, uploadBox:actionform"/>
+                    <h:panelGroup rendered="#{NavigationForm.workflowPlugin.uploadedFiles.size() > 0}">
+                        <button
+                            title="#{msgs.plugin_massupload_analyzeBarcodes}"
+                            jsf:rendered="#{NavigationForm.workflowPlugin.insertMode=='plugin_massupload_insertmode_barcode' and not NavigationForm.workflowPlugin.showInsertButton and not NavigationForm.workflowPlugin.analyzingBarcodes}"
+                            jsf:action="#{NavigationForm.workflowPlugin.assignProcessesWithBarcodeInfo}"
+                            styleClass="btn btn-blank">
+                            <span class="fa fa-qrcode"/>
+                            <span>
+                                <h:outputText value="#{msgs.plugin_massupload_analyzeBarcodes}" />
+                            </span>
+                            <f:ajax onevent="onMassuploadAjax" render="@form" />
+                        </button>
+                        <h:panelGroup
+                            styleClass="btn btn-action disabled"
+                            rendered="#{NavigationForm.workflowPlugin.analyzingBarcodes}">
+                            <span class="fa fa-cog fa-spin" />
+                            <span>
+                                #{msgs.plugin_massUpload_analyzing}
+                            </span>
+                        </h:panelGroup>
+                        <h:commandLink
+                            id="plugin_massupload_hiddenAjaxRefresh"
+                            rendered="#{true or NavigationForm.workflowPlugin.insertMode=='plugin_massupload_insertmode_barcode' and NavigationForm.workflowPlugin.analyzingBarcodes}">
+                            <f:ajax render="uploadFilesTableForm @form" />
+                        </h:commandLink>
+                        <h:commandLink title="#{msgs.abbrechen}"
+                            action="#{NavigationForm.workflowPlugin.cleanUploadFolder}"
+                            rendered="#{NavigationForm.workflowPlugin.showInsertButton}"
+                            styleClass="btn btn-blank">
+                            <h:outputText value="#{msgs.abbrechen}" />
+                        </h:commandLink>
+                        <button
+                            title="#{msgs.plugin_massupload_startInserting}"
+                            jsf:rendered="#{NavigationForm.workflowPlugin.showInsertButton}"
+                            jsf:action="#{NavigationForm.workflowPlugin.startInserting}"
+                            type="submit"
+                            class="btn btn-action">
+                            <span class="fa fa-cog"/>
+                            <span>
+                                <h:outputText value="#{msgs.plugin_massupload_startInserting}" />
+                            </span>
+                        </button>
                     </h:panelGroup>
+                </h:form>
+                <!-- // ACTION AREA -->
+                
             </intranda:box>
-
         </ui:fragment>
-        
         <script>
         	function startPolling() {
         		if(!window.massuploadInterval) {
-        			console.log("start polling")
+                    console.log("start polling")
 	        		window.massuploadInterval = setInterval(function() {
 	        			console.log("polling...")
 	        			var button = document.querySelector('#uploadBox\\:actionarea\\:plugin_massupload_hiddenAjaxRefresh');
@@ -256,7 +219,5 @@ table.select-insertmode label {
         		}
         	}
         </script>
-
     </composite:implementation>
-
 </ui:composition>
