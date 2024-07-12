@@ -50,19 +50,18 @@ Bitte beachten Sie: Soll eine Erkennung von Barcodes erfolgen, um daraus die Vor
 ![Digitalisierte Trennblätter mit Barcodes für die automatische Erkennung](screen5_de.png)
 
 
-
 ## Konfiguration
 Die Konfiguration des Plugins erfolgt in der Datei `plugin_intranda_workflow_massupload.xml` wie hier aufgezeigt:
 
 {{CONFIG_CONTENT}}
 
-| Wert                               | Beschreibung                  |
-| ---------------------------------- | ----------------------------- |
-| `allowed-file-extensions`          | Mit diesem Parameter wird festgelegt, welche Datein hochgeladen werden dürfen. Hierbei handelt es sich um einen regulären Ausdruck. |
-| `user-folder-name`                 | Wenn die Dateien aus dem Nutzerverzeichnis ausgelesen werden sollen, kann hier festgelegt werden, wie der Ornder innerhalb des Nutzerverzeichnisses heisst, aus dem die Dateien gelesen werden sollen. |
-| `detection-type`                     | Mit diesem Parameter wird festgelegt, ob die Zuordnung zu den Vorgängen auf Basis von Barcodes erfolgen soll oder ob diese anhand der Dateibenennungen erfolgen soll. Als Werte stehen hier für `filename` für die Nutzung der Dateinamen und `barcode` für die Barcodeerkennung zur Verfügung. Wird als Wert `user` angegeben, erhält der Nutzer einer Auswahlmöglichkeit in der Bedienoberfläche. |
-| `copy-images-using-goobiscript`    | Sofern der Datentransfer im Hintergrund über die Warteschlangenfunktionalität von GoobiScript erfolgen soll, kann dies hier festgelegt werden. |
-| `allowed-step`                     | Legen Sie in diesem wiederholbaren Parameter fest, welcher Arbeitsschritt im ermittelten Vorgang sich gerade im Status `offen` befinden muss. |
-| `filename-part`                    | Mit diesem Parameter kann festgelegt werden, wie die Zuordnung der Dateinamen zu den Vorgängen erfolgen soll. |
-| `filename-separator`               | Geben Sie hier dasjenige Trennzeichen an, anhand dessen ein Prefix oder Suffix abgeschnitten werden soll. Somit kann festgelegt werden, dass z.B. aus einer Datei `kleiuniv_987654321_00002.tif` bei einer Zuordnung mittels`prefix`und dem Trennzeichen `_` ein Vorgang ermittelt werden soll, der `kleinuniv_987654321` heisst. |
-| `match-type`                       | Legen Sie hier fest, ob der das Matching der Vorgänge mittels `exact` über einen exakten Namen erfolgen soll oder mittels `contains` ob der Vorgangsname den Wert lediglich enthalten soll. |
+Parameter                       | Erläuterung
+--------------------------------|----------------------------------------
+`allowed-file-extensions`       | Mit diesem Parameter wird festgelegt, welche Datein hochgeladen werden dürfen. Hierbei handelt es sich um einen regulären Ausdruck.
+`user-folder-name`              | Wenn die Dateien aus dem Nutzerverzeichnis ausgelesen werden sollen, kann hier festgelegt werden, wie der Ornder innerhalb des Nutzerverzeichnisses heisst, aus dem die Dateien gelesen werden sollen.
+`detection-type`                | Mit diesem Parameter wird festgelegt, ob die Zuordnung zu den Vorgängen auf Basis von Barcodes erfolgen soll oder ob diese anhand der Dateibenennungen erfolgen soll. Als Werte stehen hier für `filename` für die Nutzung der Dateinamen und `barcode` für die Barcodeerkennung zur Verfügung. Wird als Wert `user` angegeben, erhält der Nutzer einer Auswahlmöglichkeit in der Bedienoberfläche.
+`copy-images-using-goobiscript` | Sofern der Datentransfer im Hintergrund über die Warteschlangenfunktionalität von GoobiScript erfolgen soll, kann dies hier festgelegt werden.
+`allowed-step`                  | Legen Sie in diesem wiederholbaren Parameter fest, welcher Arbeitsschritt im ermittelten Vorgang sich gerade im Status `offen` befinden muss.
+`filename-part`                 | Mit diesem Parameter kann festgelegt werden, wie die Zuordnung der Dateinamen zu den Vorgängen erfolgen soll.
+`filename-separator`            | Geben Sie hier dasjenige Trennzeichen an, anhand dessen ein Prefix oder Suffix abgeschnitten werden soll. Somit kann festgelegt werden, dass z.B. aus einer Datei `kleiuniv_987654321_00002.tif` bei einer Zuordnung mittels`prefix`und dem Trennzeichen `_` ein Vorgang ermittelt werden soll, der `kleinuniv_987654321` heisst.
+`match-type`                    | Legen Sie hier fest, ob der das Matching der Vorgänge mittels `exact` über einen exakten Namen erfolgen soll oder mittels `contains` ob der Vorgangsname den Wert lediglich enthalten soll.
