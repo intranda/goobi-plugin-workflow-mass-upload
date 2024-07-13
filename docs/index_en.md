@@ -1,7 +1,6 @@
 ---
 title: Mass upload
 identifier: intranda_workflow_massupload
-github: https://github.com/intranda/goobi-plugin-workflow-massupload
 description: This workflow plugin allows a mass upload of files with automatically assigned to the correct Goobi processes either on the basis of the file file names or on the basis of the analysed barcodes.
 published: true
 ---
