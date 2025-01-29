@@ -4,7 +4,8 @@
 			<arg value="package"/>
             <arg value="-Dmaven.test.skip=true" />
 		</exec>
-		<copy file="module-main/target/plugin_intranda_workflow_massupload.jar" todir="/opt/digiverso/goobi/plugins/workflow/"/>
-		<copy file="module-gui/target/plugin_intranda_workflow_massupload-GUI.jar" todir="/opt/digiverso/goobi/plugins/GUI/"/>
+        <copy file="module-base/target/plugin-workflow-mass-upload-base.jar" todir="/opt/digiverso/goobi/plugins/workflow/" overwrite="true"/>
+        <copy file="module-gui/target/plugin-workflow-mass-upload-gui.jar" todir="/opt/digiverso/goobi/plugins/GUI/" overwrite="true"/>
+
 	</target>
 </project>
