@@ -2,6 +2,7 @@ package de.intranda.goobi.plugins.massuploadutils;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.goobi.production.properties.DisplayProperty;
 
 import java.util.List;
 
@@ -17,4 +18,5 @@ public class MassUploadProfile {
     private String filenamePart;
     private String filenameSeparator;
     private String processTitleMatchType;
+    private List<PropertyValue> propertiesToSet;
 }

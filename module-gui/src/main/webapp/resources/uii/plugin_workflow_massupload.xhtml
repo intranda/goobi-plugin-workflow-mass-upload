@@ -71,6 +71,26 @@
                             </h:selectOneRadio>
                         </div>
                     </h:panelGroup>
+                    <ui:repeat
+                            var="property"
+                            value="#{NavigationForm.workflowPlugin.activeProfile.propertiesToSet}">
+                        <!-- text -->
+                        <div class="form-label">
+                            <h:outputText value="#{property.name}" />
+                        </div>
+                        <div class="form-input">
+                            <h:inputText
+                                    id="value"
+                                    styleClass="form-control"
+                                    value="#{property.value}">
+                            </h:inputText>
+                            <h:message
+                                    for="value"
+                                    showDetail="true"
+                                    styleClass="help-inline text-danger" />
+                            <intranda:formHelp content="#{msgs.helpPropertyValue}" />
+                        </div>
+                    </ui:repeat>
                 </h:form>
                 <div class="d-flex">
                     <h:form id="uploadform" prependId="false" styleClass="draganddroparea m-2">
