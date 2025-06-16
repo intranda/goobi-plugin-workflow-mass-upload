@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import javax.imageio.ImageIO;
 
 import de.intranda.goobi.plugins.massuploadutils.*;
+import de.sub.goobi.persistence.managers.PropertyManager;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.goobi.beans.Process;
@@ -44,6 +45,8 @@ import org.goobi.production.plugin.PluginLoader;
 import org.goobi.production.plugin.interfaces.IPlugin;
 import org.goobi.production.plugin.interfaces.IValidatorPlugin;
 import org.goobi.production.plugin.interfaces.IWorkflowPlugin;
+import org.goobi.production.properties.DisplayProperty;
+import org.goobi.production.properties.PropertyParser;
 import org.primefaces.event.FileUploadEvent;
 import org.primefaces.model.file.UploadedFile;
 
@@ -127,6 +130,9 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         boolean copyImagesViaGoobiScript = config.getBoolean("copy-images-using-goobiscript", false);
         String detectionType = config.getString("detection-type", "filename").toLowerCase();
         String processTitleMatchType = config.getString("match-type", "contains");
+        List<PropertyValue> propertiesToSet = Arrays.asList(config.getStringArray("property-set")).stream()
+                .map(this::loadProperty)
+                .toList();
 
         MassUploadProfile profile = new MassUploadProfile(
                 name,
@@ -137,13 +143,20 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                 stepTitles,
                 filenamePart,
                 filenameSeparator,
-                processTitleMatchType
+                processTitleMatchType,
+                propertiesToSet
         );
 
         this.profiles.add(profile);
         if (this.activeProfile == null) {
             this.setActiveProfile(profile);
         }
+    }
+
+    private PropertyValue loadProperty(String propertyName) {
+        PropertyValue result = new PropertyValue();
+        result.setName(propertyName);
+        return result;
     }
 
     public void setActiveProfile(MassUploadProfile profile) {
@@ -350,66 +363,86 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         try {
             this.currentlyInserting = true;
 
-            if (this.activeProfile.isCopyImagesViaGoobiScript()) {
-                GoobiScriptCopyImages gsci = new GoobiScriptCopyImages();
-                gsci.setUploadedFiles(uploadedFiles);
-                gsci.setUser(user);
-                List<GoobiScriptResult> goobiScriptResults = gsci.prepare(null, "copyFiles for mass upload", null);
-                GoobiScriptManager gsm = Helper.getBeanByClass(GoobiScriptManager.class);
-                gsm.enqueueScripts(goobiScriptResults);
-                gsm.startWork();
-                Helper.setMeldung("plugin_massupload_insertionStartedViaGoobiScript");
+//            if (this.activeProfile.isCopyImagesViaGoobiScript()) {
+//                GoobiScriptCopyImages gsci = new GoobiScriptCopyImages();
+//                gsci.setUploadedFiles(uploadedFiles);
+//                gsci.setUser(user);
+//                List<GoobiScriptResult> goobiScriptResults = gsci.prepare(null, "copyFiles for mass upload", null);
+//                GoobiScriptManager gsm = Helper.getBeanByClass(GoobiScriptManager.class);
+//                gsm.enqueueScripts(goobiScriptResults);
+//                gsm.startWork();
+//                Helper.setMeldung("plugin_massupload_insertionStartedViaGoobiScript");
+//
+//            } else {
+//                for (MassUploadedFile muf : uploadedFiles) {
+//                    if (muf.getStatus() == MassUploadedFileStatus.OK) {
+//                        Path src = Paths.get(muf.getFile().getAbsolutePath());
+//                        Path target = Paths.get(muf.getProcessFolder(), muf.getFilename());
+//                        try {
+//                            StorageProvider.getInstance().copyFile(src, target);
+//                        } catch (IOException e) {
+//                            muf.setStatus(MassUploadedFileStatus.ERROR);
+//                            muf.setStatusmessage("File could not be copied to: " + target.toString());
+//                            log.error("Error while copying file during mass upload", e);
+//                            Helper.setFehlerMeldung("Error while copying file during mass upload", e);
+//                        }
+//                        muf.getFile().delete(); //NOSONAR
+//                    } else {
+//                        Helper.setFehlerMeldung("File could not be matched and gets skipped: " + muf.getFilename());
+//                    }
+//                }
+//
+//                // all images are uploaded, so we close the workflow step now
+//                // first remove all stepIds which had errors
+//                for (MassUploadedFile muf : uploadedFiles) {
+//                    if (muf.getStatus() != MassUploadedFileStatus.OK) {
+//                        stepIDs.remove(muf.getStepId());
+//                    }
+//                }
+//
+//                // all others can be finished now
+//                for (Integer id : stepIDs) {
+//                    Step so = StepManager.getStepById(id);
+//                    if (so.getValidationPlugin() != null && so.getValidationPlugin().length() > 0) {
+//                        IValidatorPlugin ivp = (IValidatorPlugin) PluginLoader.getPluginByTitle(PluginType.Validation, so.getValidationPlugin());
+//                        ivp.setStep(so);
+//                        if (!ivp.validate()) {
+//                            log.error("Error while closing the step " + so.getTitel() + " for process " + so.getProzess().getTitel());
+//                            Helper.setFehlerMeldung("Error while closing the step " + so.getTitel() + " for process " + so.getProzess().getTitel());
+//                        }
+//                    }
+//                    Helper.addMessageToProcessJournal(so.getProcessId(), LogType.DEBUG,
+//                            "Images uploaded and step " + so.getTitel() + " finished using Massupload Plugin.");
+//                    HelperSchritte hs = new HelperSchritte();
+//                    so.setBearbeitungsbenutzer(user);
+//                    hs.CloseStepObjectAutomatic(so);
+//                    finishedInserts.add(new MassUploadedProcess(so));
+//                }
+//
+//                Helper.setMeldung("plugin_massupload_allFilesInserted");
+//            }
 
-            } else {
-                for (MassUploadedFile muf : uploadedFiles) {
-                    if (muf.getStatus() == MassUploadedFileStatus.OK) {
-                        Path src = Paths.get(muf.getFile().getAbsolutePath());
-                        Path target = Paths.get(muf.getProcessFolder(), muf.getFilename());
-                        try {
-                            StorageProvider.getInstance().copyFile(src, target);
-                        } catch (IOException e) {
-                            muf.setStatus(MassUploadedFileStatus.ERROR);
-                            muf.setStatusmessage("File could not be copied to: " + target.toString());
-                            log.error("Error while copying file during mass upload", e);
-                            Helper.setFehlerMeldung("Error while copying file during mass upload", e);
-                        }
-                        muf.getFile().delete(); //NOSONAR
-                    } else {
-                        Helper.setFehlerMeldung("File could not be matched and gets skipped: " + muf.getFilename());
-                    }
-                }
-
-                // all images are uploaded, so we close the workflow step now
-                // first remove all stepIds which had errors
-                for (MassUploadedFile muf : uploadedFiles) {
-                    if (muf.getStatus() != MassUploadedFileStatus.OK) {
-                        stepIDs.remove(muf.getStepId());
-                    }
-                }
-
-                // all others can be finished now
-                for (Integer id : stepIDs) {
-                    Step so = StepManager.getStepById(id);
-                    if (so.getValidationPlugin() != null && so.getValidationPlugin().length() > 0) {
-                        IValidatorPlugin ivp = (IValidatorPlugin) PluginLoader.getPluginByTitle(PluginType.Validation, so.getValidationPlugin());
-                        ivp.setStep(so);
-                        if (!ivp.validate()) {
-                            log.error("Error while closing the step " + so.getTitel() + " for process " + so.getProzess().getTitel());
-                            Helper.setFehlerMeldung("Error while closing the step " + so.getTitel() + " for process " + so.getProzess().getTitel());
-                        }
-                    }
-                    Helper.addMessageToProcessJournal(so.getProcessId(), LogType.DEBUG,
-                            "Images uploaded and step " + so.getTitel() + " finished using Massupload Plugin.");
-                    HelperSchritte hs = new HelperSchritte();
-                    so.setBearbeitungsbenutzer(user);
-                    hs.CloseStepObjectAutomatic(so);
-                    finishedInserts.add(new MassUploadedProcess(so));
-                }
-
-                Helper.setMeldung("plugin_massupload_allFilesInserted");
-            }
+            // Set process properties
+            stepIDs.stream()
+                    .map(StepManager::getStepById)
+                    .map(Step::getProcessId)
+                    .map(ProcessManager::getProcessById)
+                    .distinct()
+                    .forEach(this::setProcessProperties);
         } finally {
             this.currentlyInserting = false;
+        }
+    }
+
+    private void setProcessProperties(Process process) {
+        for (PropertyValue pv : this.activeProfile.getPropertiesToSet()) {
+            process.getEigenschaften().stream()
+                    .filter(p -> p.getPropertyName().equals(pv.getName()))
+                    .findFirst()
+                    .ifPresent(p -> {
+                        p.setPropertyValue(pv.getValue());
+                        PropertyManager.saveProperty(p);
+                    });
         }
     }
 
