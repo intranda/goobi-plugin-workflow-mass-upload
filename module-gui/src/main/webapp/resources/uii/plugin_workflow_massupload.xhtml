@@ -31,25 +31,46 @@
 
                 <!-- UPLOAD AREA -->
                 <h:form
-                    id="insertMode"
+                    id="settings"
                     styleClass="form-row"
-                    prependId="false"
-                    rendered="#{NavigationForm.workflowPlugin.detectionType eq 'user'}">
-                    <div class="form-label">
-                        <h:outputText value="#{msgs.plugin_massupload_insertMode}:" />
-                    </div>
-                    <div class="form-input">
-                        <h:selectOneRadio
-                            value="#{NavigationForm.workflowPlugin.insertMode}"
-                            styleClass="select-radio select-radio-horizontal select-insertmode">
-                            <f:selectItems
-                                var="selection"
-                                value="#{NavigationForm.workflowPlugin.insertModes}"
-                                itemLabel="#{msgs[selection]}"
-                                itemValue="#{selection}" />
-                            <f:ajax />
-                        </h:selectOneRadio>
-                    </div>
+                    prependId="false">
+                    <h:panelGroup
+                            rendered="#{NavigationForm.workflowPlugin.profiles.size() > 1}">
+                        <div class="form-label">
+                            <h:outputText value="#{msgs.plugin_massupload_selectProfile}:" />
+                        </div>
+                        <div class="form-input">
+                            <h:selectOneMenu
+                                    value="#{NavigationForm.workflowPlugin.activeProfile}"
+                                    styleClass="select-radio select-radio-horizontal select-insertmode"
+                                    converter="omnifaces.SelectItemsConverter">
+                                <f:selectItems
+                                        var="selection"
+                                        value="#{NavigationForm.workflowPlugin.profiles}"
+                                        itemLabel="#{selection.name}"
+                                        itemValue="#{selection}" />
+                                <f:ajax render="@all" />
+                            </h:selectOneMenu>
+                        </div>
+                    </h:panelGroup>
+                    <h:panelGroup
+                            rendered="#{NavigationForm.workflowPlugin.activeProfile.detectionType eq 'user'}">
+                        <div class="form-label">
+                            <h:outputText value="#{msgs.plugin_massupload_insertMode}:" />
+                        </div>
+                        <div class="form-input">
+                            <h:selectOneRadio
+                                    value="#{NavigationForm.workflowPlugin.insertMode}"
+                                    styleClass="select-radio select-radio-horizontal select-insertmode">
+                                <f:selectItems
+                                        var="selection"
+                                        value="#{NavigationForm.workflowPlugin.insertModes}"
+                                        itemLabel="#{msgs[selection]}"
+                                        itemValue="#{selection}" />
+                                <f:ajax />
+                            </h:selectOneRadio>
+                        </div>
+                    </h:panelGroup>
                 </h:form>
                 <div class="d-flex">
                     <h:form id="uploadform" prependId="false" styleClass="draganddroparea m-2">
@@ -64,7 +85,7 @@
                             sizeLimit="1000000000000"
                             fileLimit="42000"
                             previewWidth="0"
-                            allowTypes="#{NavigationForm.workflowPlugin.allowedTypes}"
+                            allowTypes="#{NavigationForm.workflowPlugin.activeProfile.allowedTypes}"
                             oncomplete="if(this.files.length == 0) sortFiles()"
                             update="uploadBox:actionform"/>
                     </h:form>

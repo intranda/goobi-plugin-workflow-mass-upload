@@ -28,6 +28,8 @@ import java.util.concurrent.Future;
 
 import javax.imageio.ImageIO;
 
+import de.intranda.goobi.plugins.massuploadutils.*;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.goobi.beans.Process;
 import org.goobi.beans.Step;
@@ -55,10 +57,6 @@ import com.google.zxing.Result;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
 
-import de.intranda.goobi.plugins.massuploadutils.GoobiScriptCopyImages;
-import de.intranda.goobi.plugins.massuploadutils.MassUploadedFile;
-import de.intranda.goobi.plugins.massuploadutils.MassUploadedFileStatus;
-import de.intranda.goobi.plugins.massuploadutils.MassUploadedProcess;
 import de.sub.goobi.config.ConfigPlugins;
 import de.sub.goobi.config.ConfigurationHelper;
 import de.sub.goobi.helper.Helper;
@@ -81,27 +79,22 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private static final long serialVersionUID = 2487957051892555829L;
 
     private static final String PLUGIN_NAME = "intranda_workflow_massupload";
-    private String allowedTypes;
-    private String filenamePart;
-    private String userFolderName;
-    private String processTitleMatchType;
-    private String filenameSeparator;
-    private List<String> stepTitles;
+
+    private List<MassUploadProfile> profiles;
+    private MassUploadProfile activeProfile;
     private transient List<MassUploadedFile> uploadedFiles = new ArrayList<>();
     private User user;
     private File tempFolder;
     private HashSet<Integer> stepIDs = new HashSet<>();
     private transient List<MassUploadedProcess> finishedInserts = new ArrayList<>();
-    private boolean copyImagesViaGoobiScript = false;
     private transient ExecutorService barcodePool;
     private volatile boolean analyzingBarcodes = false;
     private boolean currentlyInserting;
     private boolean hideInsertButtonAfterClick = false;
-    private String detectionType;
 
     //        private boolean useBarcodesDefault = false;
     private String[] insertModes = { "plugin_massupload_insertmode_imageName", "plugin_massupload_insertmode_barcode" };
-    private String insertMode = "plugin_massupload_insertmode_imageName";
+    private String insertMode;
 
     // use file upload or insert files from user home
     private boolean useUpload;
@@ -112,21 +105,53 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     public MassUploadPlugin() {
         log.info("Mass upload plugin started");
         XMLConfiguration config = ConfigPlugins.getPluginConfig(PLUGIN_NAME);
-        allowedTypes = config.getString("allowed-file-extensions", "/(\\.|\\/)(gif|jpe?g|png|tiff?|jp2|pdf)$/");
-        filenamePart = config.getString("filename-part", "prefix").toLowerCase();
-        userFolderName = config.getString("user-folder-name", "mass_upload").toLowerCase();
-        filenameSeparator = config.getString("filename-separator", "_").toLowerCase();
-        stepTitles = Arrays.asList(config.getStringArray("allowed-step"));
-        copyImagesViaGoobiScript = config.getBoolean("copy-images-using-goobiscript", false);
-        detectionType = config.getString("detection-type", "filename").toLowerCase();
+        profiles = new ArrayList<>();
+        List<HierarchicalConfiguration> xmlProfiles = config.configurationsAt("profile");
 
-        //        boolean useBarcodes = config.getBoolean("use-barcodes", false);
-        if ("barcode".equals(detectionType)) {
+        if (!xmlProfiles.isEmpty()) {
+            xmlProfiles.forEach(this::loadProfile);
+        } else {
+            loadProfile(config);
+        }
+
+        barcodePool = Executors.newFixedThreadPool(2);
+    }
+
+    private void loadProfile(HierarchicalConfiguration config) {
+        String name = config.getString("name", "unnamed");
+        String allowedTypes = config.getString("allowed-file-extensions", "/(\\.|\\/)(gif|jpe?g|png|tiff?|jp2|pdf)$/");
+        String filenamePart = config.getString("filename-part", "prefix").toLowerCase();
+        String userFolderName = config.getString("user-folder-name", "mass_upload").toLowerCase();
+        String filenameSeparator = config.getString("filename-separator", "_").toLowerCase();
+        List<String> stepTitles = Arrays.asList(config.getStringArray("allowed-step"));
+        boolean copyImagesViaGoobiScript = config.getBoolean("copy-images-using-goobiscript", false);
+        String detectionType = config.getString("detection-type", "filename").toLowerCase();
+        String processTitleMatchType = config.getString("match-type", "contains");
+
+        MassUploadProfile profile = new MassUploadProfile(
+                name,
+                allowedTypes,
+                userFolderName,
+                detectionType,
+                copyImagesViaGoobiScript,
+                stepTitles,
+                filenamePart,
+                filenameSeparator,
+                processTitleMatchType
+        );
+
+        this.profiles.add(profile);
+        if (this.activeProfile == null) {
+            this.setActiveProfile(profile);
+        }
+    }
+
+    public void setActiveProfile(MassUploadProfile profile) {
+        this.activeProfile = profile;
+        insertMode = "plugin_massupload_insertmode_imageName";
+        if ("barcode".equals(profile.getDetectionType())) {
             insertMode = "plugin_massupload_insertmode_barcode";
         }
-        barcodePool = Executors.newFixedThreadPool(2);
-        processTitleMatchType = config.getString("match-type", "contains");
-
     }
 
     @Override
@@ -262,7 +287,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         stepIDs = new HashSet<>();
         try {
             readUser();
-            File folder = new File(user.getHomeDir(), userFolderName);
+            File folder = new File(user.getHomeDir(), this.activeProfile.getUserFolderName());
             if (folder.exists() && folder.canRead()) {
                 // we use the Files API intentionally, as we expect folders with many files in them.
                 // The nio DirectoryStream initializes the Path objects lazily, so we don't have as many objects in memory and to create
@@ -325,7 +350,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         try {
             this.currentlyInserting = true;
 
-            if (copyImagesViaGoobiScript) {
+            if (this.activeProfile.isCopyImagesViaGoobiScript()) {
                 GoobiScriptCopyImages gsci = new GoobiScriptCopyImages();
                 gsci.setUploadedFiles(uploadedFiles);
                 gsci.setUser(user);
@@ -396,11 +421,11 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private void assignProcessByFilename(MassUploadedFile uploadedFile, Map<String, List<Process>> searchCache) {
         // get the relevant part of the file name
         String identifier = uploadedFile.getFilename().substring(0, uploadedFile.getFilename().lastIndexOf("."));
-        if ("prefix".equals(filenamePart) && identifier.contains(filenameSeparator)) {
-            identifier = identifier.substring(0, identifier.lastIndexOf(filenameSeparator));
+        if ("prefix".equals(this.activeProfile.getFilenamePart()) && identifier.contains(this.activeProfile.getFilenameSeparator())) {
+            identifier = identifier.substring(0, identifier.lastIndexOf(this.activeProfile.getFilenameSeparator()));
         }
-        if ("suffix".equals(filenamePart) && identifier.contains(filenameSeparator)) {
-            identifier = identifier.substring(identifier.lastIndexOf(filenameSeparator) + 1, identifier.length());
+        if ("suffix".equals(this.activeProfile.getFilenamePart()) && identifier.contains(this.activeProfile.getFilenameSeparator())) {
+            identifier = identifier.substring(identifier.lastIndexOf(this.activeProfile.getFilenameSeparator()) + 1, identifier.length());
         }
 
         assignProcess(uploadedFile, searchCache, identifier);
@@ -410,7 +435,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         // get all matching processes
         // first try to get this from the cache
         List<Process> hitlist = null;
-        if ("exact".equals(processTitleMatchType)) {
+        if ("exact".equals(this.activeProfile.getProcessTitleMatchType())) {
             hitlist = searchCache == null ? null : searchCache.get(identifier);
             if (hitlist == null) {
                 Process p = ProcessManager.getProcessByExactTitle(identifier);
@@ -464,7 +489,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
 
                 for (Step s : p.getSchritte()) {
                     if (s.getBearbeitungsstatusEnum() == StepStatus.OPEN) {
-                        for (String st : stepTitles) {
+                        for (String st : this.activeProfile.getStepTitles()) {
                             if (st.equals(s.getTitel())) {
                                 workflowStepAsExpected = true;
                                 uploadedFile.setStepId(s.getId());
