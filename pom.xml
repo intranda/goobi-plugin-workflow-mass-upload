@@ -7,6 +7,7 @@
     <version>25.05</version>
     <relativePath/>
   </parent>
+  <version>25.05.1</version>
   <groupId>io.goobi.workflow.plugin</groupId>
   <artifactId>plugin-workflow-mass-upload</artifactId>
   <packaging>pom</packaging>
