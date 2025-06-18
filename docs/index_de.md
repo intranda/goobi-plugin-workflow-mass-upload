@@ -54,6 +54,8 @@ Die Konfiguration des Plugins erfolgt in der Datei `plugin_intranda_workflow_mas
 
 {{CONFIG_CONTENT}}
 
+Das Plugin kann traditionell mit den unten gelisteten Parametern konfiguriert werden. Alternativ, können beliebig viele Profile mit `<profile>` Elementen erzeugt werden. Ein Profil enthält das Element `<name>` und dann alle unten definierten Elemente zur Konfiguration. So können mehrere unterschiedliche Konfigurationen für das Plugin verwendet werden, die dann über eine Liste ausgewählt werden können. 
+
 Parameter                       | Erläuterung
 --------------------------------|----------------------------------------
 `allowed-file-extensions`       | Mit diesem Parameter wird festgelegt, welche Datein hochgeladen werden dürfen. Hierbei handelt es sich um einen regulären Ausdruck.
@@ -64,3 +66,4 @@ Parameter                       | Erläuterung
 `filename-part`                 | Mit diesem Parameter kann festgelegt werden, wie die Zuordnung der Dateinamen zu den Vorgängen erfolgen soll.
 `filename-separator`            | Geben Sie hier dasjenige Trennzeichen an, anhand dessen ein Prefix oder Suffix abgeschnitten werden soll. Somit kann festgelegt werden, dass z.B. aus einer Datei `kleiuniv_987654321_00002.tif` bei einer Zuordnung mittels`prefix`und dem Trennzeichen `_` ein Vorgang ermittelt werden soll, der `kleinuniv_987654321` heisst.
 `match-type`                    | Legen Sie hier fest, ob der das Matching der Vorgänge mittels `exact` über einen exakten Namen erfolgen soll oder mittels `contains` ob der Vorgangsname den Wert lediglich enthalten soll.
+`property-set`                  | Legen Sie in diesem wiederholbaren Parameter fest, welche Vorgangseigenschaften während des Massenuploads für alle involvierten Vorgänge gesetzt werden sollen.

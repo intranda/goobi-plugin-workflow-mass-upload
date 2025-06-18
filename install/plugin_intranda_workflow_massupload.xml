@@ -1,32 +1,39 @@
 <config_plugin>
+	<profile>
+		<!-- profile name -->
+		<name>default</name>
 
-	<!-- which file types shall be allowed for uploading these -->
-	<allowed-file-extensions>/(\.|\/)(gif|jpe?g|png|tiff?|jp2|pdf)$/</allowed-file-extensions>
+		<!-- which file types shall be allowed for uploading these -->
+		<allowed-file-extensions>/(\.|\/)(gif|jpe?g|png|tiff?|jp2|pdf)$/</allowed-file-extensions>
 
-	<!-- name of the folder inside of a users home directory to use as alternative for web upload -->
-	<user-folder-name>mass_upload</user-folder-name>
+		<!-- name of the folder inside of a users home directory to use as alternative for web upload -->
+		<user-folder-name>mass_upload</user-folder-name>
 
-	<!-- define the method how to detect the processes from the uploaded images the following methods are available:
-		- "filename" to use the filenames for matching the right Goobi processes
-		- "barcode" to detect barcodes inside of the images to assign to the right Goobi processes up to the next barcode page
-		- "user" to let the user decide between filename or barcode detection -->
-	<detection-type>filename</detection-type>
+		<!-- define the method how to detect the processes from the uploaded images the following methods are available:
+            - "filename" to use the filenames for matching the right Goobi processes
+            - "barcode" to detect barcodes inside of the images to assign to the right Goobi processes up to the next barcode page
+            - "user" to let the user decide between filename or barcode detection -->
+		<detection-type>filename</detection-type>
 
-	<!-- copy images using goobi script in the background (true or false) -->
-	<copy-images-using-goobiscript>false</copy-images-using-goobiscript>
+		<!-- copy images using goobi script in the background (true or false) -->
+		<copy-images-using-goobiscript>false</copy-images-using-goobiscript>
 
-	<!-- which workflow step has to be open to allow the upload into the process -->
-	<allowed-step>Scanning</allowed-step>
-	<allowed-step>Upload</allowed-step>
+		<!-- which workflow step has to be open to allow the upload into the process -->
+		<allowed-step>Scanning</allowed-step>
+		<allowed-step>Upload</allowed-step>
 
-	<!-- which part of the files shall be used to find the right process (prefix, suffix or complete) -->
-	<filename-part>prefix</filename-part>
-	<filename-separator>_</filename-separator>
+		<!-- which part of the files shall be used to find the right process (prefix, suffix or complete) -->
+		<filename-part>prefix</filename-part>
+		<filename-separator>_</filename-separator>
 
-    <!-- define if the process title must contain the value or must match the exact title (contains or exact)  -->
-    <match-type>contains</match-type>
+		<!-- define if the process title must contain the value or must match the exact title (contains or exact)  -->
+		<match-type>contains</match-type>
 
-    <!-- which part of the process title shall be used to match the right process (prefix, suffix or complete) - STILL UNUSED <processname-part>complete</processname-part>  -->
-    <!-- <processname_separator>_</processname_separator> -->
+		<!-- which part of the process title shall be used to match the right process (prefix, suffix or complete) - STILL UNUSED <processname-part>complete</processname-part>  -->
+		<!-- <processname_separator>_</processname_separator> -->
 
+		<!-- Properties to be set during mass upload -->
+		<!-- <property-set>Comment</property-set> -->
+		<!-- <property-set>Scanner</property-set> -->
+	</profile>
 </config_plugin>

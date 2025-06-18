@@ -54,6 +54,8 @@ The plugin is configured in the file `plugin_intranda_workflow_massupload.xml` a
 
 {{CONFIG_CONTENT}}
 
+The plugin can be configured traditionally with the parameters listed below. Alternatively, any number of profiles can be created with `<profile>` elements. A profile contains the `<name>` element and then all the elements defined below for configuration. This allows several different configurations to be used for the plugin, which can then be selected from a list.
+
 Parameter                       | Explanation
 --------------------------------|----------------------------------------
 `allowed-file-extensions`       | This parameter is used to specify which files may be uploaded. This is a regular expression.
@@ -64,3 +66,4 @@ Parameter                       | Explanation
 `filename-part`                 | This parameter can be used to specify how the file names are to be assigned to the processes.
 `filename-separator`            | Specify the separator that is to be used to truncate a prefix or suffix. This allows you to specify that, for example, an operation called `kleiuniv_987654321` is to be determined from a file named `kleiuniv_987654321_00002.tif` when an assignment is made using `prefix` and the separator `_`.
 `match-type`                    | Specify here whether the matching of the processes should be carried out using `exact` via an exact name or using `contains` whether the process name should only contain the value.
+`property-set`                  | Use this repeatable parameter to specify which process properties are to be set for all involved processes during the mass upload.
