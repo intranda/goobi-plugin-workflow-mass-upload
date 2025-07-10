@@ -363,8 +363,9 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                 gsm.enqueueScripts(goobiScriptResults);
                 gsm.startWork();
                 Helper.setMeldung("plugin_massupload_insertionStartedViaGoobiScript");
-
+                log.info("Mass upload of {} files started via Goobi script", uploadedFiles.size());
             } else {
+                log.info("Mass upload of {} files starting", uploadedFiles.size());
                 for (MassUploadedFile muf : uploadedFiles) {
                     if (muf.getStatus() == MassUploadedFileStatus.OK) {
                         Path src = Paths.get(muf.getFile().getAbsolutePath());
@@ -411,6 +412,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                 }
 
                 Helper.setMeldung("plugin_massupload_allFilesInserted");
+                log.info("Mass upload of {} / {} files finished", uploadedFiles.stream().filter(muf -> muf.getStatus() == MassUploadedFileStatus.OK).count(), uploadedFiles.size());
             }
 
             // Set process properties
