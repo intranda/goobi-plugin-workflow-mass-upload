@@ -3,6 +3,10 @@ title: Massenupload
 identifier: intranda_workflow_massupload
 description: Dieses Workflow Plugin erlaubt einen Massenupload von Dateien mit automatischer Zuordnung zu den korrekten Goobi-Vorgängen entweder auf Basis der Dateinamen oder anhand der analysierten Barcodes.
 published: true
+keywords:
+    - Goobi workflow
+    - Plugin
+    - Workflow Plugin
 ---
 
 ## Einführung
