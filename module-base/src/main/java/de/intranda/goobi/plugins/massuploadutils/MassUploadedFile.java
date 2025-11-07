@@ -18,6 +18,7 @@ public class MassUploadedFile implements Comparable<MassUploadedFile> {
     private int stepId;
     private int tempId;
     private boolean transfered = false;
+    private boolean instantMove = false;
     private boolean checkedForBarcode;
     private Optional<String> barcodeValue = Optional.empty();
 

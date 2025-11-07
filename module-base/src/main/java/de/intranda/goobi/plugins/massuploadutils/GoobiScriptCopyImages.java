@@ -76,15 +76,20 @@ public class GoobiScriptCopyImages extends AbstractIGoobiScript implements IGoob
             Path src = Paths.get(muf.getFile().getAbsolutePath());
             Path target = Paths.get(muf.getProcessFolder(), muf.getFilename());
             try {
-                StorageProvider.getInstance().copyFile(src, target);
+            	if (muf.isInstantMove()) {
+                	StorageProvider.getInstance().move(src, target);
+                } else {
+            		StorageProvider.getInstance().copyFile(src, target);
+                	muf.getFile().delete(); //NOSONAR                        	
+                }
+            	muf.setTransfered(true);
+            	
             } catch (IOException e) {
                 muf.setStatus(MassUploadedFileStatus.ERROR);
                 muf.setStatusmessage("File could not be copied to: " + target.toString());
                 logger.error("Error while copying file during mass upload goobiscript", e);
                 Helper.setFehlerMeldung("Error while copying file during mass upload goobiscript", e);
             }
-            muf.getFile().delete(); //NOSONAR
-            muf.setTransfered(true);
         }
 
         if (muf.getStatus() == MassUploadedFileStatus.OK) {

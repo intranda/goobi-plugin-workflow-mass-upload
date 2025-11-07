@@ -17,7 +17,10 @@
 
 		<!-- copy images using goobi script in the background (true or false) -->
 		<copy-images-using-goobiscript>false</copy-images-using-goobiscript>
-
+		
+		<!-- do an immediate move of the file instead of copying it first and then delete it in two separate calls -->
+		<instant-move>false</instant-move>
+		
 		<!-- which workflow step has to be open to allow the upload into the process -->
 		<allowed-step>Scanning</allowed-step>
 		<allowed-step>Upload</allowed-step>
