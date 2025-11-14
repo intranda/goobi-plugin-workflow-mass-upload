@@ -14,6 +14,7 @@ public class MassUploadProfile {
     private String userFolderName;
     private String detectionType;
     private boolean copyImagesViaGoobiScript;
+    private boolean instantMove;
     private List<String> stepTitles;
     private String filenamePart;
     private String filenameSeparator;

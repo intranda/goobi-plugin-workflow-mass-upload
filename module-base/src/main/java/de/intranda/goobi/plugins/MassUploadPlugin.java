@@ -85,7 +85,6 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
     private volatile boolean analyzingBarcodes = false;
     private boolean currentlyInserting;
     private boolean hideInsertButtonAfterClick = false;
-
     //        private boolean useBarcodesDefault = false;
     private String[] insertModes = { "plugin_massupload_insertmode_imageName", "plugin_massupload_insertmode_barcode" };
     private String insertMode;
@@ -119,6 +118,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         String filenameSeparator = config.getString("filename-separator", "_").toLowerCase();
         List<String> stepTitles = Arrays.asList(config.getStringArray("allowed-step"));
         boolean copyImagesViaGoobiScript = config.getBoolean("copy-images-using-goobiscript", false);
+        boolean instantMove = config.getBoolean("instant-move", false);
         String detectionType = config.getString("detection-type", "filename").toLowerCase();
         String processTitleMatchType = config.getString("match-type", "contains");
         List<PropertyValue> propertiesToSet = Arrays.asList(config.getStringArray("property-set")).stream()
@@ -131,6 +131,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                 userFolderName,
                 detectionType,
                 copyImagesViaGoobiScript,
+                instantMove,
                 stepTitles,
                 filenamePart,
                 filenameSeparator,
@@ -255,13 +256,13 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             }
             out.flush();
             MassUploadedFile muf = new MassUploadedFile(file, fileName);
+            muf.setInstantMove(this.activeProfile.isInstantMove());
             if ("plugin_massupload_insertmode_barcode".equals(insertMode)) {
                 Callable<String> readBarcodeTask = () -> readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
                 Future<String> futureBarcode = this.barcodePool.submit(readBarcodeTask);
                 String barcodeInfo = null;
                 barcodeInfo = futureBarcode.get();
                 muf.setCheckedForBarcode(true);
-
                 muf.setBarcodeValue(Optional.ofNullable(barcodeInfo));
             } else {
                 assignProcessByFilename(muf, null);
@@ -300,13 +301,13 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                     for (Path file : files) {
                         if (!Files.isDirectory(file) && !".DS_Store".equals(file.getFileName().toString())) {
                             MassUploadedFile muf = new MassUploadedFile(file.toFile(), file.getFileName().toString());
+                            muf.setInstantMove(this.activeProfile.isInstantMove());
                             if ("plugin_massupload_insertmode_barcode".equals(insertMode)) {
                                 Callable<String> readBarcodeTask = () -> readBarcode(muf.getFile(), BarcodeFormat.CODE_128);
                                 Future<String> futureBarcode = this.barcodePool.submit(readBarcodeTask);
                                 String barcodeInfo = null;
                                 barcodeInfo = futureBarcode.get();
                                 muf.setCheckedForBarcode(true);
-
                                 muf.setBarcodeValue(Optional.ofNullable(barcodeInfo));
                             } else {
                                 assignProcessByFilename(muf, null);
@@ -370,15 +371,25 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                     if (muf.getStatus() == MassUploadedFileStatus.OK) {
                         Path src = Paths.get(muf.getFile().getAbsolutePath());
                         Path target = Paths.get(muf.getProcessFolder(), muf.getFilename());
+                        
                         try {
-                            StorageProvider.getInstance().copyFile(src, target);
+                        
+	                        if (muf.isInstantMove()) {
+	                        	StorageProvider.getInstance().move(src, target);
+	                        } else {
+                        		StorageProvider.getInstance().copyFile(src, target);
+	                        	muf.getFile().delete(); //NOSONAR                        	
+	                        }
+                        
                         } catch (IOException e) {
-                            muf.setStatus(MassUploadedFileStatus.ERROR);
-                            muf.setStatusmessage("File could not be copied to: " + target.toString());
-                            log.error("Error while copying file during mass upload", e);
-                            Helper.setFehlerMeldung("Error while copying file during mass upload", e);
+                        	muf.setStatus(MassUploadedFileStatus.ERROR);
+                        	muf.setStatusmessage("File could not be moved to: " + target.toString());
+                        	log.error("Error while moving file during mass upload", e);
+                        	Helper.setFehlerMeldung("Error while moving file during mass upload", e);
                         }
-                        muf.getFile().delete(); //NOSONAR
+                        
+                        
+                        
                     } else {
                         Helper.setFehlerMeldung("File could not be matched and gets skipped: " + muf.getFilename());
                     }
