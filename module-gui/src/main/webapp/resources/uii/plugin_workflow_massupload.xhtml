@@ -7,7 +7,8 @@
     xmlns:intranda="http://xmlns.jcp.org/jsf/composite/composites"
     xmlns:pt="http://xmlns.jcp.org/jsf/passthrough"
     xmlns:p="http://primefaces.org/ui"
-    xmlns:jsf="http://xmlns.jcp.org/jsf">
+    xmlns:jsf="http://xmlns.jcp.org/jsf"
+    xmlns:util="http://goobi.io/util">
     <composite:interface>
     </composite:interface>
     <composite:implementation>
@@ -25,7 +26,7 @@
                 boxPadding="false"
                 boxClass="mb-3">
                 <intranda:boxTitle
-                    icon="fa-plug"
+                    icon="plug"
                     title="#{msgs[NavigationForm.workflowPlugin.title]}">
                 </intranda:boxTitle>
 
@@ -200,19 +201,13 @@
                                 jsf:rendered="#{NavigationForm.workflowPlugin.insertMode=='plugin_massupload_insertmode_barcode' and not NavigationForm.workflowPlugin.showInsertButton and not NavigationForm.workflowPlugin.analyzingBarcodes}"
                                 jsf:action="#{NavigationForm.workflowPlugin.assignProcessesWithBarcodeInfo}"
                                 styleClass="btn btn-blank">
-                                <span class="fa fa-qrcode"/>
-                                <span>
-                                    <h:outputText value="#{msgs.plugin_massupload_analyzeBarcodes}" />
-                                </span>
+                                <util:icon-text icon="qrcode" text="#{msgs.plugin_massupload_analyzeBarcodes}" />
                                 <f:ajax onevent="onMassuploadAjax" render="@form" />
                             </button>
                             <h:panelGroup
                                 styleClass="btn btn-action disabled"
                                 rendered="#{NavigationForm.workflowPlugin.analyzingBarcodes}">
-                                <span class="fa fa-cog fa-spin" />
-                                <span>
-                                    #{msgs.plugin_massUpload_analyzing}
-                                </span>
+                                <util:icon-text icon="settings" text="#{msgs.plugin_massUpload_analyzing}" iconClass="spin" />
                             </h:panelGroup>
                             <h:commandLink
                                 id="plugin_massupload_hiddenAjaxRefresh"
@@ -231,10 +226,7 @@
                                 jsf:action="#{NavigationForm.workflowPlugin.startInserting}"
                                 type="submit"
                                 class="btn btn-action">
-                                <span class="fa fa-cog"/>
-                                <span>
-                                    <h:outputText value="#{msgs.plugin_massupload_startInserting}" />
-                                </span>
+                                <util:icon-text icon="settings" text="#{msgs.plugin_massupload_startInserting}" />
                             </button>
                         </h:panelGroup>
                     </div>
