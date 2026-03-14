@@ -42,7 +42,7 @@ Wenn das Plugin korrekt installiert und konfiguriert wurde, ist es innerhalb des
 
 ![Geöffnetes Plugin für den Upload](screen3_de.png)
 
-An dieser Stellen können nun entweder Dateien hochgeladen oder aus dem Nutzerverzeichnis ausgelesen werden. Nach der Analyse der Dateinamen bzw. Bilder zeigt Goobi workflow an, welchen Vorgängen die eingespielten Bilder zugewiesen werden können.
+An dieser Stelle können nun entweder Dateien hochgeladen oder aus dem Nutzerverzeichnis ausgelesen werden. Nach der Analyse der Dateinamen bzw. Bilder zeigt Goobi workflow an, welchen Vorgängen die eingespielten Bilder zugewiesen werden können.
 
 ![Analysierte Dateien mit Anzeige der zugehörigen Vorgänge](screen4_de.png)
 
@@ -62,13 +62,13 @@ Das Plugin kann traditionell mit den unten gelisteten Parametern konfiguriert we
 
 Parameter                       | Erläuterung
 --------------------------------|----------------------------------------
-`allowed-file-extensions`       | Mit diesem Parameter wird festgelegt, welche Datein hochgeladen werden dürfen. Hierbei handelt es sich um einen regulären Ausdruck.
-`user-folder-name`              | Wenn die Dateien aus dem Nutzerverzeichnis ausgelesen werden sollen, kann hier festgelegt werden, wie der Ornder innerhalb des Nutzerverzeichnisses heisst, aus dem die Dateien gelesen werden sollen.
+`allowed-file-extensions`       | Mit diesem Parameter wird festgelegt, welche Dateien hochgeladen werden dürfen. Hierbei handelt es sich um einen regulären Ausdruck.
+`user-folder-name`              | Wenn die Dateien aus dem Nutzerverzeichnis ausgelesen werden sollen, kann hier festgelegt werden, wie der Ordner innerhalb des Nutzerverzeichnisses heisst, aus dem die Dateien gelesen werden sollen.
 `detection-type`                | Mit diesem Parameter wird festgelegt, ob die Zuordnung zu den Vorgängen auf Basis von Barcodes erfolgen soll oder ob diese anhand der Dateibenennungen erfolgen soll. Als Werte stehen hier für `filename` für die Nutzung der Dateinamen und `barcode` für die Barcodeerkennung zur Verfügung. Wird als Wert `user` angegeben, erhält der Nutzer einer Auswahlmöglichkeit in der Bedienoberfläche.
 `copy-images-using-goobiscript` | Sofern der Datentransfer im Hintergrund über die Warteschlangenfunktionalität von GoobiScript erfolgen soll, kann dies hier festgelegt werden.
 `instant-move`                  | Wenn der Wert auf `false` gesetzt ist (default), werden die Dateien erst zum Zielordner kopiert und danach an der Quelle gelöscht. Ist der Wert hingegen auf `true` gesetzt, erfolgt für die Dateien sofort ein `move` von der Quelle zum Zielordner.
 `allowed-step`                  | Legen Sie in diesem wiederholbaren Parameter fest, welcher Arbeitsschritt im ermittelten Vorgang sich gerade im Status `offen` befinden muss.
 `filename-part`                 | Mit diesem Parameter kann festgelegt werden, wie die Zuordnung der Dateinamen zu den Vorgängen erfolgen soll.
-`filename-separator`            | Geben Sie hier dasjenige Trennzeichen an, anhand dessen ein Prefix oder Suffix abgeschnitten werden soll. Somit kann festgelegt werden, dass z.B. aus einer Datei `kleiuniv_987654321_00002.tif` bei einer Zuordnung mittels`prefix`und dem Trennzeichen `_` ein Vorgang ermittelt werden soll, der `kleinuniv_987654321` heisst.
-`match-type`                    | Legen Sie hier fest, ob der das Matching der Vorgänge mittels `exact` über einen exakten Namen erfolgen soll oder mittels `contains` ob der Vorgangsname den Wert lediglich enthalten soll.
+`filename-separator`            | Geben Sie hier dasjenige Trennzeichen an, anhand dessen ein Prefix oder Suffix abgeschnitten werden soll. Somit kann festgelegt werden, dass z.B. aus einer Datei `kleiuniv_987654321_00002.tif` bei einer Zuordnung mittels `prefix`und dem Trennzeichen `_` ein Vorgang ermittelt werden soll, der `kleinuniv_987654321` heisst.
+`match-type`                    | Legen Sie hier fest, ob das Matching der Vorgänge mittels `exact` über einen exakten Namen erfolgen soll oder mittels `contains` ob der Vorgangsname den Wert lediglich enthalten soll.
 `property-set`                  | Legen Sie in diesem wiederholbaren Parameter fest, welche Vorgangseigenschaften während des Massenuploads für alle involvierten Vorgänge gesetzt werden sollen.
