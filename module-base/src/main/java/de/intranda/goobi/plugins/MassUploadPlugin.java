@@ -10,7 +10,17 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -19,9 +29,6 @@ import java.util.concurrent.Future;
 
 import javax.imageio.ImageIO;
 
-import de.intranda.goobi.plugins.massuploadutils.*;
-import de.sub.goobi.helper.enums.PropertyType;
-import de.sub.goobi.persistence.managers.PropertyManager;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.goobi.beans.GoobiProperty;
@@ -51,15 +58,23 @@ import com.google.zxing.Result;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
 
+import de.intranda.goobi.plugins.massuploadutils.GoobiScriptCopyImages;
+import de.intranda.goobi.plugins.massuploadutils.MassUploadProfile;
+import de.intranda.goobi.plugins.massuploadutils.MassUploadedFile;
+import de.intranda.goobi.plugins.massuploadutils.MassUploadedFileStatus;
+import de.intranda.goobi.plugins.massuploadutils.MassUploadedProcess;
+import de.intranda.goobi.plugins.massuploadutils.PropertyValue;
 import de.sub.goobi.config.ConfigPlugins;
 import de.sub.goobi.config.ConfigurationHelper;
 import de.sub.goobi.helper.Helper;
 import de.sub.goobi.helper.HelperSchritte;
 import de.sub.goobi.helper.StorageProvider;
+import de.sub.goobi.helper.enums.PropertyType;
 import de.sub.goobi.helper.enums.StepStatus;
 import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
 import de.sub.goobi.persistence.managers.ProcessManager;
+import de.sub.goobi.persistence.managers.PropertyManager;
 import de.sub.goobi.persistence.managers.StepManager;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
@@ -121,7 +136,8 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
         boolean instantMove = config.getBoolean("instant-move", false);
         String detectionType = config.getString("detection-type", "filename").toLowerCase();
         String processTitleMatchType = config.getString("match-type", "contains");
-        List<PropertyValue> propertiesToSet = Arrays.asList(config.getStringArray("property-set")).stream()
+        List<PropertyValue> propertiesToSet = Arrays.asList(config.getStringArray("property-set"))
+                .stream()
                 .map(this::loadProperty)
                 .toList();
 
@@ -136,8 +152,7 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                 filenamePart,
                 filenameSeparator,
                 processTitleMatchType,
-                propertiesToSet
-        );
+                propertiesToSet);
 
         this.profiles.add(profile);
         if (this.activeProfile == null) {
@@ -246,7 +261,15 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
             }
         }
 
+        // sanitize path, remove any leading ../
+        fileName = Path.of(fileName).getFileName().toString();
+
+        // check if we still are in the temp folder
         File file = new File(tempFolder, fileName);
+        if (!file.toPath().startsWith(tempFolder.toPath())) {
+            throw new IOException("Invalid filename");
+        }
+
         try (OutputStream out = new FileOutputStream(file)) {
 
             int read = 0;
@@ -371,25 +394,23 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                     if (muf.getStatus() == MassUploadedFileStatus.OK) {
                         Path src = Paths.get(muf.getFile().getAbsolutePath());
                         Path target = Paths.get(muf.getProcessFolder(), muf.getFilename());
-                        
+
                         try {
-                        
-	                        if (muf.isInstantMove()) {
-	                        	StorageProvider.getInstance().move(src, target);
-	                        } else {
-                        		StorageProvider.getInstance().copyFile(src, target);
-	                        	muf.getFile().delete(); //NOSONAR                        	
-	                        }
-                        
+
+                            if (muf.isInstantMove()) {
+                                StorageProvider.getInstance().move(src, target);
+                            } else {
+                                StorageProvider.getInstance().copyFile(src, target);
+                                muf.getFile().delete(); //NOSONAR
+                            }
+
                         } catch (IOException e) {
-                        	muf.setStatus(MassUploadedFileStatus.ERROR);
-                        	muf.setStatusmessage("File could not be moved to: " + target.toString());
-                        	log.error("Error while moving file during mass upload", e);
-                        	Helper.setFehlerMeldung("Error while moving file during mass upload", e);
+                            muf.setStatus(MassUploadedFileStatus.ERROR);
+                            muf.setStatusmessage("File could not be moved to: " + target.toString());
+                            log.error("Error while moving file during mass upload", e);
+                            Helper.setFehlerMeldung("Error while moving file during mass upload", e);
                         }
-                        
-                        
-                        
+
                     } else {
                         Helper.setFehlerMeldung("File could not be matched and gets skipped: " + muf.getFilename());
                     }
@@ -423,7 +444,8 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
                 }
 
                 Helper.setMeldung("plugin_massupload_allFilesInserted");
-                log.info("Mass upload of {} / {} files finished", uploadedFiles.stream().filter(muf -> muf.getStatus() == MassUploadedFileStatus.OK).count(), uploadedFiles.size());
+                log.info("Mass upload of {} / {} files finished",
+                        uploadedFiles.stream().filter(muf -> muf.getStatus() == MassUploadedFileStatus.OK).count(), uploadedFiles.size());
             }
 
             // Set process properties
@@ -440,7 +462,8 @@ public class MassUploadPlugin implements IWorkflowPlugin, IPlugin {
 
     private void setProcessProperties(Process process) {
         for (PropertyValue pv : this.activeProfile.getPropertiesToSet()) {
-            GoobiProperty property = process.getEigenschaften().stream()
+            GoobiProperty property = process.getEigenschaften()
+                    .stream()
                     .filter(p -> p.getPropertyName().equals(pv.getName()))
                     .findFirst()
                     .orElseGet(() -> {
