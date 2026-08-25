@@ -12,12 +12,7 @@
     <composite:interface>
     </composite:interface>
     <composite:implementation>
-        <h:panelGroup
-            rendered="#{!LoginForm.hasRole('Plugin_Goobi_Massupload')}"
-            styleClass="color-box bg-hot text-white d-flex flex-row p-3">
-            <h:outputText
-                value="#{msgs.noAccessAllowed} Plugin_Goobi_Massupload" />
-        </h:panelGroup>
+        <util:missing-rights rights="Plugin_Goobi_Massupload" />
         <ui:fragment rendered="#{LoginForm.hasRole('Plugin_Goobi_Massupload')}">
             <intranda:box
                 id="uploadBox"
