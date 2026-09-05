@@ -1,6 +1,9 @@
 # Goobi workflow Plugin: goobi-plugin-workflow-mass-upload
 
-<img src="https://goobi.io/wp-content/uploads/logo_goobi_plugin.png" align="right" style="margin:0 0 20px 20px;" alt="Plugin for Goobi workflow" width="175" height="109">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://goobi.io/logo_goobi_workflow_dark.png">
+  <img src="https://goobi.io/logo_goobi_workflow.png" align="right" alt="Plugin for Goobi workflow" width="240" height="132" hspace="20" vspace="10">
+</picture>
 
 This Workflow plugin for Goobi workflow allows a mass upload of files with automatic allocation to the correct Goobi processes either on the basis of the file names or by means of the analysed barcodes.
 
